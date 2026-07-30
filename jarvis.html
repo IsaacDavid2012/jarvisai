@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JARVIS AI — System Overview</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg: #0a0d12;
+    --bg-panel: #10141b;
+    --bg-panel-raised: #141a23;
+    --line: #212836;
+    --line-bright: #2c3546;
+    --text: #e7eaf0;
+    --text-dim: #8a93a6;
+    --text-faint: #545e70;
+    --green: #46f5a3;
+    --green-dim: #1f7a53;
+    --amber: #e8a33d;
+    --red: #f0596a;
+    --blue: #5fb3f0;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', sans-serif;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  html{ scroll-behavior:smooth; }
+
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+
+  body::before{
+    content:'';
+    position:fixed; inset:0;
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(70,245,163,0.05), transparent 40%),
+      radial-gradient(circle at 85% 60%, rgba(95,179,240,0.04), transparent 45%);
+    pointer-events:none;
+    z-index:0;
+  }
+
+  .wrap{ max-width:1080px; margin:0 auto; padding:0 28px; position:relative; z-index:1; }
+
+  /* ---------- Top status bar ---------- */
+  .statusbar{
+    border-bottom:1px solid var(--line);
+    background:rgba(10,13,18,0.9);
+    backdrop-filter:blur(8px);
+    position:sticky; top:0; z-index:50;
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--text-faint);
+  }
+  .statusbar-inner{
+    max-width:1080px; margin:0 auto; padding:10px 28px;
+    display:flex; align-items:center; justify-content:space-between;
+    flex-wrap:wrap; gap:8px;
+  }
+  .statusbar .dot{
+    display:inline-block; width:7px; height:7px; border-radius:50%;
+    background:var(--green); margin-right:7px;
+    box-shadow:0 0 8px var(--green);
+    animation:pulse 2.2s ease-in-out infinite;
+  }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.35;} }
+  .statusbar-left span{ color:var(--text-dim); }
+  .statusbar-right{ display:flex; gap:18px; }
+  .statusbar-right span b{ color:var(--green); font-weight:600; }
+
+  /* ---------- Hero ---------- */
+  .hero{ padding:88px 0 64px; }
+  .eyebrow{
+    font-family:var(--mono); font-size:12.5px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--green); display:flex; align-items:center; gap:10px; margin-bottom:22px;
+  }
+  .eyebrow::before{ content:''; width:22px; height:1px; background:var(--green); display:inline-block; }
+
+  h1{
+    font-family:var(--mono); font-weight:800; font-size:clamp(34px, 6vw, 60px);
+    line-height:1.05; letter-spacing:-0.01em; color:var(--text);
+  }
+  h1 .accent{ color:var(--green); }
+  .hero-sub{
+    max-width:620px; font-size:17px; color:var(--text-dim); margin-top:22px;
+  }
+  .hero-sub b{ color:var(--text); font-weight:600; }
+
+  .stack-row{
+    display:flex; flex-wrap:wrap; gap:8px; margin-top:32px;
+  }
+  .chip{
+    font-family:var(--mono); font-size:12px; padding:6px 12px;
+    border:1px solid var(--line-bright); border-radius:4px; color:var(--text-dim);
+    background:var(--bg-panel);
+  }
+
+  .meta-strip{
+    margin-top:44px; display:grid; grid-template-columns:repeat(3, 1fr); gap:1px;
+    background:var(--line); border:1px solid var(--line); border-radius:8px; overflow:hidden;
+  }
+  .meta-cell{ background:var(--bg-panel); padding:18px 20px; }
+  .meta-cell .label{ font-family:var(--mono); font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-faint); }
+  .meta-cell .value{ font-family:var(--mono); font-size:14px; color:var(--text); margin-top:6px; }
+
+  /* ---------- Section shell ---------- */
+  section{ padding:64px 0; border-top:1px solid var(--line); }
+  .section-head{ margin-bottom:36px; }
+  .section-tag{
+    font-family:var(--mono); font-size:11px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--text-faint);
+  }
+  h2{
+    font-family:var(--mono); font-weight:700; font-size:clamp(22px, 3.4vw, 30px);
+    color:var(--text); margin-top:8px; letter-spacing:-0.01em;
+  }
+  .section-desc{ color:var(--text-dim); max-width:620px; margin-top:12px; font-size:15px; }
+
+  /* ---------- Pipeline diagram ---------- */
+  .pipeline{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:10px;
+    padding:32px 26px; overflow-x:auto;
+  }
+  .pipe-row{
+    display:flex; align-items:center; gap:0; min-width:760px;
+  }
+  .pipe-node{
+    flex:1; text-align:center; padding:16px 10px; position:relative;
+  }
+  .pipe-box{
+    background:var(--bg-panel-raised); border:1px solid var(--line-bright); border-radius:8px;
+    padding:14px 10px; font-family:var(--mono); font-size:12.5px; color:var(--text);
+    min-height:56px; display:flex; align-items:center; justify-content:center;
+    transition:border-color .2s, transform .2s;
+  }
+  .pipe-node:hover .pipe-box{ border-color:var(--green); transform:translateY(-2px); }
+  .pipe-arrow{
+    flex:0 0 32px; height:1px; background:var(--line-bright); position:relative; align-self:center;
+  }
+  .pipe-arrow::after{
+    content:'▸'; color:var(--text-faint); position:absolute; right:-6px; top:50%; transform:translateY(-50%);
+    font-size:11px;
+  }
+
+  .pipe-branch-label{
+    text-align:center; font-family:var(--mono); font-size:10px; color:var(--text-faint);
+    margin-top:8px; letter-spacing:.03em;
+  }
+
+  .fanout{
+    margin-top:8px; display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; min-width:760px;
+  }
+  .fanout-item{
+    background:var(--bg-panel-raised); border:1px solid var(--line); border-radius:7px;
+    padding:12px 10px; text-align:center; font-family:var(--mono); font-size:11.5px; color:var(--text-dim);
+  }
+  .fanout-item .ico{ font-size:16px; display:block; margin-bottom:6px; }
+
+  /* ---------- Feature cards ---------- */
+  .feature-grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:14px; }
+  .feature-card{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:10px; padding:24px;
+    transition:border-color .2s;
+  }
+  .feature-card:hover{ border-color:var(--line-bright); }
+  .feature-num{
+    font-family:var(--mono); font-size:11px; color:var(--green-dim); letter-spacing:.08em;
+  }
+  .feature-card h3{
+    font-family:var(--mono); font-size:16px; font-weight:600; color:var(--text); margin-top:10px;
+  }
+  .feature-card p{ color:var(--text-dim); font-size:14px; margin-top:8px; }
+  .feature-card .tag-row{ margin-top:14px; display:flex; gap:6px; flex-wrap:wrap; }
+  .feature-card .tag-row span{
+    font-family:var(--mono); font-size:10.5px; color:var(--text-faint); border:1px solid var(--line-bright);
+    padding:3px 8px; border-radius:4px;
+  }
+
+  /* ---------- Reminder stages ---------- */
+  .stages{ display:flex; flex-direction:column; gap:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .stage{
+    display:grid; grid-template-columns:120px 1fr; gap:20px; padding:20px 24px;
+    background:var(--bg-panel); border-bottom:1px solid var(--line);
+    align-items:center;
+  }
+  .stage:last-child{ border-bottom:none; }
+  .stage-marker{
+    font-family:var(--mono); font-size:12px; color:var(--bg); font-weight:700;
+    background:var(--green); border-radius:5px; padding:6px 8px; text-align:center;
+  }
+  .stage:nth-child(2) .stage-marker{ background:var(--amber); }
+  .stage:nth-child(3) .stage-marker{ background:var(--red); }
+  .stage-title{ font-family:var(--mono); font-size:14px; color:var(--text); font-weight:600; }
+  .stage-desc{ font-size:13.5px; color:var(--text-dim); margin-top:4px; }
+
+  /* ---------- File table ---------- */
+  .filetable{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  .filetable th{
+    text-align:left; font-family:var(--mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--text-faint); padding:10px 14px; border-bottom:1px solid var(--line-bright);
+  }
+  .filetable td{
+    padding:12px 14px; border-bottom:1px solid var(--line); color:var(--text-dim); vertical-align:top;
+  }
+  .filetable tr:hover td{ background:rgba(255,255,255,0.015); }
+  .filetable td:first-child{ font-family:var(--mono); color:var(--green); white-space:nowrap; font-size:13px; }
+
+  /* ---------- Terminal / command reference ---------- */
+  .terminal{
+    background:#080a0d; border:1px solid var(--line-bright); border-radius:10px; overflow:hidden;
+  }
+  .term-head{
+    display:flex; align-items:center; gap:6px; padding:10px 14px; border-bottom:1px solid var(--line);
+    background:var(--bg-panel);
+  }
+  .term-head .tdot{ width:10px; height:10px; border-radius:50%; }
+  .term-head .tdot:nth-child(1){ background:#f0596a; }
+  .term-head .tdot:nth-child(2){ background:#e8a33d; }
+  .term-head .tdot:nth-child(3){ background:#46f5a3; }
+  .term-head span.file{ margin-left:10px; font-family:var(--mono); font-size:11.5px; color:var(--text-faint); }
+  .term-body{ padding:20px 22px; font-family:var(--mono); font-size:13px; line-height:2; }
+  .term-body .prompt{ color:var(--green); }
+  .term-body .path{ color:var(--blue); }
+  .term-body .comment{ color:var(--text-faint); }
+  .term-body .out{ color:var(--text-dim); display:block; padding-left:0; }
+
+  /* ---------- Command reference table ---------- */
+  .cmd-list{ display:flex; flex-direction:column; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .cmd-row{
+    display:grid; grid-template-columns:1fr 1fr; gap:24px; background:var(--bg-panel); padding:16px 22px;
+  }
+  .cmd-row .say{ font-family:var(--mono); font-size:13px; color:var(--text); }
+  .cmd-row .say::before{ content:'"'; color:var(--text-faint); }
+  .cmd-row .say::after{ content:'"'; color:var(--text-faint); }
+  .cmd-row .does{ font-size:13px; color:var(--text-dim); display:flex; align-items:center; }
+  .cmd-row .does::before{ content:'→'; color:var(--green); margin-right:8px; }
+  .cmd-head{ display:grid; grid-template-columns:1fr 1fr; gap:24px; padding:0 22px 10px; }
+  .cmd-head span{ font-family:var(--mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-faint); }
+
+  /* ---------- Footer ---------- */
+  footer{
+    border-top:1px solid var(--line); padding:40px 0 60px; font-family:var(--mono); font-size:12px; color:var(--text-faint);
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;
+  }
+  footer .dot{ color:var(--green); }
+
+  @media (max-width:720px){
+    .meta-strip{ grid-template-columns:1fr; }
+    .feature-grid{ grid-template-columns:1fr; }
+    .stage{ grid-template-columns:1fr; gap:8px; }
+    .stage-marker{ width:fit-content; }
+    .cmd-row, .cmd-head{ grid-template-columns:1fr; gap:6px; }
+    .statusbar-right{ display:none; }
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{ animation:none !important; transition:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="statusbar">
+  <div class="statusbar-inner">
+    <div class="statusbar-left"><span class="dot"></span>JARVIS AI <span style="color:var(--text-faint)">/ node-status: online</span></div>
+    <div class="statusbar-right">
+      <span>uptime <b>24/7</b></span>
+      <span>tz <b>Asia/Kuala_Lumpur</b></span>
+      <span>model <b>neural-chat</b></span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="eyebrow">Self-hosted · WhatsApp-native · Local LLM</div>
+    <h1>JARVIS AI<br><span class="accent">Executive Assistant &<br>Infrastructure Control Node</span></h1>
+    <p class="hero-sub">
+      A 24/7 autonomous assistant that lives inside WhatsApp. It reads a message the way Isaac would type it —
+      no commands, no menus — and turns it into a calendar entry, a task, a note, a live web search,
+      or a status check on the servers running Creative Clicks Studios.
+    </p>
+
+    <div class="stack-row">
+      <span class="chip">Node.js v22+</span>
+      <span class="chip">WhatsApp Web.js</span>
+      <span class="chip">Ollama · neural-chat</span>
+      <span class="chip">SQLite3</span>
+      <span class="chip">Puppeteer / Chromium</span>
+      <span class="chip">Google Calendar API</span>
+      <span class="chip">Docker + systemd</span>
+    </div>
+
+    <div class="meta-strip">
+      <div class="meta-cell">
+        <div class="label">Owner</div>
+        <div class="value">Isaac David Christopher</div>
+      </div>
+      <div class="meta-cell">
+        <div class="label">Business</div>
+        <div class="value">Creative Clicks Studios</div>
+      </div>
+      <div class="meta-cell">
+        <div class="label">Interface</div>
+        <div class="value">WhatsApp — no separate app</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW A MESSAGE FLOWS -->
+  <section id="flow">
+    <div class="section-head">
+      <div class="section-tag">01 — Message lifecycle</div>
+      <h2>What happens between a message and a reply</h2>
+      <p class="section-desc">
+        Every WhatsApp message Isaac sends passes through the same pipeline before JARVIS decides what to do with it.
+      </p>
+    </div>
+
+    <div class="pipeline">
+      <div class="pipe-row">
+        <div class="pipe-node"><div class="pipe-box">📱 WhatsApp message</div></div>
+        <div class="pipe-arrow"></div>
+        <div class="pipe-node"><div class="pipe-box">🛡️ Security whitelist +<br>anti-loop guard</div></div>
+        <div class="pipe-arrow"></div>
+        <div class="pipe-node"><div class="pipe-box">🧠 Memory extractor<br>(silent)</div></div>
+        <div class="pipe-arrow"></div>
+        <div class="pipe-node"><div class="pipe-box">⚡ Hybrid intent parser</div></div>
+      </div>
+      <div class="pipe-branch-label">intent parser resolves to one of 9 categories, then routes below ↓</div>
+
+      <div class="fanout">
+        <div class="fanout-item"><span class="ico">📅</span>calendar_add / query</div>
+        <div class="fanout-item"><span class="ico">📋</span>task_add / list</div>
+        <div class="fanout-item"><span class="ico">📝</span>note_add / view</div>
+        <div class="fanout-item"><span class="ico">🌐</span>web_search</div>
+        <div class="fanout-item"><span class="ico">🖥️</span>server_status</div>
+        <div class="fanout-item"><span class="ico">📄</span>generate_quote</div>
+        <div class="fanout-item"><span class="ico">☀️</span>morning_digest</div>
+        <div class="fanout-item"><span class="ico">💬</span>general (LLM persona)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INTENT PARSING -->
+  <section id="intent">
+    <div class="section-head">
+      <div class="section-tag">02 — Understanding</div>
+      <h2>Hybrid natural language parsing</h2>
+      <p class="section-desc">Two tiers, so common phrasing never has to wait on the LLM.</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-num">TIER 1</div>
+        <h3>Instant regex matching</h3>
+        <p>Sub-millisecond pattern matching for everyday phrasing — <em>"Got a shoot with Sarah Saturday 3pm"</em>, <em>"Need to buy drumsticks tomorrow"</em> — resolved without touching the model.</p>
+        <div class="tag-row"><span>regex</span><span>&lt;1ms</span><span>no LLM call</span></div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-num">TIER 2</div>
+        <h3>AI fallback classification</h3>
+        <p>When Tier 1 returns <code>general</code> for a non-trivial message, the local Ollama model classifies it into one of the nine system intents before routing continues.</p>
+        <div class="tag-row"><span>neural-chat</span><span>9 categories</span><span>local inference</span></div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-num">DATES</div>
+        <h3>Relative date engine</h3>
+        <p>Resolves natural phrasing — "tuesday next week", "day after tomorrow", "July 31st" — into exact dates without UTC day-shift bugs.</p>
+        <div class="tag-row"><span>no timezone drift</span><span>KL local time</span></div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-num">TITLES</div>
+        <h3>Clean title extraction</h3>
+        <p>Strips action words ("Add event", "Schedule"), date phrases, and time ranges from the raw message so the saved title stays clean.</p>
+        <div class="tag-row"><span>"3pm–5pm" stripped</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- REMINDER STAGES -->
+  <section id="reminders">
+    <div class="section-head">
+      <div class="section-tag">03 — Proactive reminders</div>
+      <h2>Three-stage event notifications</h2>
+      <p class="section-desc">JARVIS doesn't wait to be asked. Every calendar event is watched by a cron and escalates automatically as it approaches.</p>
+    </div>
+    <div class="stages">
+      <div class="stage">
+        <div class="stage-marker">STAGE 1</div>
+        <div>
+          <div class="stage-title">☀️ Day-of morning reminder</div>
+          <div class="stage-desc">Fires the morning of the event, folded into the 8:00 AM digest.</div>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="stage-marker">STAGE 2</div>
+        <div>
+          <div class="stage-title">⏳ Two hours before</div>
+          <div class="stage-desc">Fires 120 minutes ahead of start time. If a client's phone number is attached to the event, JARVIS notifies them directly too.</div>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="stage-marker">STAGE 3</div>
+        <div>
+          <div class="stage-title">🔴 Imminent start</div>
+          <div class="stage-desc">Fires 15–30 minutes before the event begins — last call before it's happening.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CAPABILITIES -->
+  <section id="capabilities">
+    <div class="section-head">
+      <div class="section-tag">04 — Capabilities</div>
+      <h2>What it actually does day to day</h2>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-num">SEARCH</div>
+        <h3>Headless web search</h3>
+        <p>Puppeteer drives real Chromium to scrape DuckDuckGo organic results — bypassing bot walls — with fallbacks to the DDG Instant Answer API and Wikipedia. Ollama summarizes and returns clickable sources.</p>
+        <div class="tag-row"><span>search.js</span><span>ad-filtered</span></div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-num">NOTES</div>
+        <h3>Catalog + reader</h3>
+        <p>"show notes" returns a numbered index. "view note 1" or "note 3" pulls the full content of a single entry.</p>
+        <div class="tag-row"><span>catalog index</span><span>full reader</span></div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-num">MEMORY</div>
+        <h3>Silent preference learning</h3>
+        <p>Scans incoming chats in the background to catch things like "Client Mark prefers PDF invoices" — saved to SQLite and mirrored to a human-readable MEMORY.md.</p>
+        <div class="tag-row"><span>auto-extraction</span><span>MEMORY.md sync</span></div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-num">HEALTH</div>
+        <h3>Infrastructure monitoring</h3>
+        <p>Pings the multi-server setup — Friday (production), Alpha (office), JARVIS (AI node) — and folds status into the morning digest.</p>
+        <div class="tag-row"><span>Tailscale</span><span>ICMP / HTTP</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FILE MAP -->
+  <section id="files">
+    <div class="section-head">
+      <div class="section-tag">05 — Component map</div>
+      <h2>File structure</h2>
+    </div>
+    <table class="filetable">
+      <thead>
+        <tr><th>File</th><th>Role</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>main.js</td><td>Entrypoint — WhatsApp client, message listener, cron scheduler, morning digest</td></tr>
+        <tr><td>intents.js</td><td>Hybrid intent classifier (regex + Ollama fallback)</td></tr>
+        <tr><td>search.js</td><td>Puppeteer + DDG API + Wikipedia search module</td></tr>
+        <tr><td>db.js</td><td>SQLite access layer — events, tasks, notes, reminders</td></tr>
+        <tr><td>calendar.js</td><td>Google Calendar API integration</td></tr>
+        <tr><td>memory.js</td><td>Preference learning engine, MEMORY.md sync</td></tr>
+        <tr><td>ollama.js</td><td>Axios client for the local Ollama API</td></tr>
+        <tr><td>quotations.js</td><td>Quotation / invoice generation for Creative Clicks Studios</td></tr>
+        <tr><td>server_health.js</td><td>Tailscale-based server status checker</td></tr>
+        <tr><td>personal.db</td><td>SQLite store — events, tasks, notes, memories</td></tr>
+        <tr><td>docker-compose.yml</td><td>Deployment manifest — Ollama + JARVIS container</td></tr>
+        <tr><td>jarvisai.service</td><td>systemd unit for 24/7 background operation</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- COMMAND REFERENCE -->
+  <section id="commands">
+    <div class="section-head">
+      <div class="section-tag">06 — Talking to it</div>
+      <h2>Say it plainly, JARVIS routes it</h2>
+    </div>
+    <div class="cmd-head">
+      <span>What you'd type</span>
+      <span>What happens</span>
+    </div>
+    <div class="cmd-list">
+      <div class="cmd-row"><span class="say">Add event Badminton tuesday next week 3pm - 5pm</span><span class="does">Scheduled with 3-stage reminders</span></div>
+      <div class="cmd-row"><span class="say">Got a photo shoot with Sarah on Saturday at 3pm</span><span class="does">Casual phrasing, same result</span></div>
+      <div class="cmd-row"><span class="say">I need to buy new drumsticks tomorrow</span><span class="does">Added as a pending task</span></div>
+      <div class="cmd-row"><span class="say">show my tasks</span><span class="does">Numbered list of active tasks</span></div>
+      <div class="cmd-row"><span class="say">complete task 1</span><span class="does">Marks task #1 done</span></div>
+      <div class="cmd-row"><span class="say">Save note named Mistral AI: [content]</span><span class="does">Note saved under that title</span></div>
+      <div class="cmd-row"><span class="say">view note 1</span><span class="does">Full note content returned</span></div>
+      <div class="cmd-row"><span class="say">What is the latest AI model released in 2026?</span><span class="does">Live search + AI summary + sources</span></div>
+      <div class="cmd-row"><span class="say">Is server Friday running?</span><span class="does">Status check across all nodes</span></div>
+      <div class="cmd-row"><span class="say">morning digest</span><span class="does">Immediate executive briefing</span></div>
+    </div>
+  </section>
+
+  <!-- RUNNING IT -->
+  <section id="run">
+    <div class="section-head">
+      <div class="section-tag">07 — Deployment</div>
+      <h2>Running the system</h2>
+    </div>
+    <div class="terminal">
+      <div class="term-head">
+        <span class="tdot"></span><span class="tdot"></span><span class="tdot"></span>
+        <span class="file">jarvis · systemd deployment</span>
+      </div>
+      <div class="term-body">
+<span class="comment"># local run</span><br>
+<span class="prompt">$</span> npm install<br>
+<span class="prompt">$</span> npm start<br>
+<br>
+<span class="comment"># persistent 24/7 daemon</span><br>
+<span class="prompt">$</span> sudo cp jarvisai.service <span class="path">/etc/systemd/system/</span><br>
+<span class="prompt">$</span> sudo systemctl daemon-reload<br>
+<span class="prompt">$</span> sudo systemctl enable --now jarvisai<br>
+<span class="out">● jarvisai.service — active (running)</span>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div><span class="dot">●</span> JARVIS AI — Creative Clicks Studios</div>
+    <div>Node.js · Ollama · SQLite · Asia/Kuala_Lumpur</div>
+  </footer>
+
+</div>
+</body>
+</html>
