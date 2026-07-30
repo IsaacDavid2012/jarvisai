@@ -1,0 +1,21 @@
+[Unit]
+Description=JARVIS AI WhatsApp Assistant
+After=network.target ollama.service
+Wants=ollama.service
+
+[Service]
+Type=simple
+User=isaac
+WorkingDirectory=/jarvis/code/jarvisai
+ExecStart=/usr/bin/node /jarvis/code/jarvisai/main.js
+Restart=always
+RestartSec=5s
+Environment=NODE_ENV=production
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Logging
+StandardOutput=append:/jarvis/code/jarvisai/jarvisai.log
+StandardError=append:/jarvis/code/jarvisai/jarvisai.log
+
+[Install]
+WantedBy=multi-user.target
