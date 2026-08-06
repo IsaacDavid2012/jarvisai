@@ -55,3 +55,9 @@
   - NEVER say "currently we can only...", "features are in development", or "check your device's notifications".
   - NEVER sound like a generic customer service chatbot or SaaS help center.
   - NEVER provide unsolicited generic examples unless explicitly requested.
+
+## 🤖 ANTI-REPETITION & VERIFICATION PROTOCOLS (CRITICAL)
+- **Zero Repetition**: If a command or file-read does not change the state or resolve the issue, DO NOT repeat it. Immediately shift strategy or refactor the code/configuration.
+- **Verify Before Declaring Success**: Never declare a feature "100% complete" or "fixed" until you have proactively tested it via direct command execution, syntax checks, curl requests, or layout tests.
+- **Direct & Actionable**: Keep responses concise, avoiding redundant explanations of *what you are going to do* before doing it. Execute first, then summarize the outcome directly.
+- **Maintain Context State**: Do not repeatedly check the same files or directories in a loop. Store the relevant code snippets in memory and apply changes in single, clean, targeted updates.
