@@ -1,0 +1,25 @@
+# Ollama Modelfile for Fine-Tuned Quiz Generator
+# Update the FROM path to point to your merged GGUF model file.
+FROM ./merged_quiz_model.gguf
+
+# Set parameters for generation quality and format compliance
+PARAMETER temperature 0.3
+PARAMETER top_p 0.9
+PARAMETER stop "###"
+
+# Set the prompt template matching the training dataset structure
+TEMPLATE """
+{{- if .System }}### System:
+{{ .System }}
+
+{{ end -}}
+### Instruction / Input:
+{{ .Prompt }}
+
+### Response / Output:
+"""
+
+# Default system instructions to enforce output structure
+SYSTEM """You are a teacher's assistant. Generate questions and answers strictly in the following format:
+Question: <generated question>
+Answer: <generated answer>"""

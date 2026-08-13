@@ -3,6 +3,16 @@ const { queryOllama } = require("./ollama");
 function parseIntentRegex(message) {
   const msg = message.toLowerCase().trim();
 
+  // --- 1-SHOT DRAFT & SEND (Top Priority) ---
+  if (/(draft and send|tell|text|message)\s+([a-z0-9_\+]+)\s+(that|telling|about|to)\b/i.test(msg) || /^draft and send to\b/i.test(msg)) {
+    return "draft_and_send";
+  }
+
+  // --- DRAFT MESSAGE (Review Mode) ---
+  if (/(draft|compose|create)\s+(a\s+)?(message|text|draft)\b/i.test(msg) || /(draft.*for|compose.*for|create.*draft)\b/i.test(msg)) {
+    return "draft_message";
+  }
+
   // --- QUOTATION & INVOICE INTENTS ---
   if (/(generate quote|create quote|quotation|generate invoice|create invoice|quote for|invoice for|send.*quotation|send.*quote|draft.*quote|quote\b|invoice\b|client name|pricing for|rate for)/.test(msg)) {
     return "generate_quote";
@@ -52,6 +62,17 @@ function parseIntentRegex(message) {
   }
 
   // --- CALENDAR & REMINDER INTENTS ---
+  if (/(what|when|show|list|view|upcoming|my|today|this week|how's my|how is my)\s*.*(calendar|event|meeting|appointment|schedule|reminder|week|day)/.test(msg) || 
+      /what's (my )?(schedule|calendar|week|today|upcoming)/.test(msg) ||
+      /how's my week looking/.test(msg) ||
+      msg === "calendar" || msg === "schedule" || msg === "events" || msg === "my schedule" || msg === "what's on") {
+    return "calendar_query";
+  }
+
+  if (/(delete|remove|cancel)\s+(event|meeting|reminder|appointment)/.test(msg)) {
+    return "calendar_delete";
+  }
+
   const eventWords = "(shoot|session|meeting|practice|service|class|call|flight|dinner|lunch|hangout|badminton|gym|appointment|gig|recording|edit|rehearsal|event|reminder)";
   const timeIndicators = "(at \\d|on \\d|tomorrow|today|this \\w+|next \\w+|in \\d+|from now|\\d+pm|\\d+am|\\d+:\\d+)";
 
@@ -65,17 +86,6 @@ function parseIntentRegex(message) {
 
   if (/(got a|have a|going to|heading to|heading out for)\s+.*(at|on|tomorrow|today|this|next|\d+pm|\d+am)/.test(msg)) {
     return "calendar_add";
-  }
-
-  if (/(delete|remove|cancel)\s+(event|meeting|reminder|appointment)/.test(msg)) {
-    return "calendar_delete";
-  }
-
-  if (/(what|when|show|list|view|upcoming|my|today|this week|how's my|how is my)\s*.*(calendar|event|meeting|appointment|schedule|reminder|week|day)/.test(msg) || 
-      /what's (my )?(schedule|calendar|week|today|upcoming)/.test(msg) ||
-      /how's my week looking/.test(msg) ||
-      msg === "calendar" || msg === "schedule" || msg === "events" || msg === "my schedule" || msg === "what's on") {
-    return "calendar_query";
   }
 
   // --- TASKS INTENTS ---
@@ -97,11 +107,62 @@ function parseIntentRegex(message) {
     return "web_search";
   }
 
-  // --- OUTBOUND MESSAGE INTENT ---
-  if (/(send message|send msg|send whatsapp|send text)\b/.test(msg)) {
-    return "send_message";
+  // --- MENU & HELP INTENT ---
+  if (/^\s*(hi|hello|hey|yo|menu|help|commands|options|start|info|jarvis)\s*$/i.test(msg) || /^\s*(show menu|view menu|command list|help menu|features)\b/i.test(msg)) {
+    return "show_menu";
   }
-  if (/(send to|send it to)\b/.test(msg) && /(\+?\d[\d\s\-]{7,15}\d)/.test(msg)) {
+
+  // --- MENU SELECTION INTENT (Interactive list click or row ID) ---
+  if (/^menu_(draft_msg|schedule_msg|use_template|add_contact|add_event|add_task|add_note|search_web|server_status|morning_digest)$/i.test(msg)) {
+    return "menu_selection";
+  }
+
+  // --- MESSAGING & CONTACT INTENTS ---
+  if (/(add contact|save contact|create contact)\b/.test(msg)) {
+    return "contact_add";
+  }
+  if (/(show contacts|list contacts|my contacts|view contacts)\b/.test(msg) || msg === "contacts") {
+    return "contact_list";
+  }
+  if (/(delete contact|remove contact)\b/.test(msg)) {
+    return "contact_delete";
+  }
+
+  if (/(save template|create template|add template)\b/.test(msg)) {
+    return "template_save";
+  }
+  if (/(show templates|list templates|my templates|view templates)\b/.test(msg) || msg === "templates") {
+    return "template_list";
+  }
+  if (/^use template\b/.test(msg)) {
+    return "template_use";
+  }
+
+  if (/(message history|chat history|message log|chat log)\b/.test(msg) || /^history\b/.test(msg)) {
+    return "message_history";
+  }
+
+  if (/(remind me if|followup if|follow-up if|escalate if|ping me if.*doesn't reply|remind.*if.*no reply)\b/.test(msg)) {
+    return "set_followup_reminder";
+  }
+
+  if (/(schedule message|send at|send this at|send on|send tomorrow|send next|send in \d+)\b/.test(msg)) {
+    return "schedule_message";
+  }
+
+  if (/(draft and send|tell|text|message)\s+([A-Za-z0-9_\+]+)\s+(that|telling|about|to)\b/.test(msg) || /^draft and send to\b/.test(msg)) {
+    return "draft_and_send";
+  }
+
+  if (/(draft|compose|create)\s+(a\s+)?(message|text|draft)\b/.test(msg) || /(draft.*for|compose.*for|create.*draft)\b/.test(msg)) {
+    return "draft_message";
+  }
+
+  if (/(change to|make it|make this|rewrite|refine|add detail|more casual|more formal|more concise|shorter|longer)\b/.test(msg)) {
+    return "refine_draft";
+  }
+
+  if (/(send message|send msg|send whatsapp|send text|send it|send now)\b/.test(msg) || /^\s*send\s*$/.test(msg) || /^send to\b/.test(msg)) {
     return "send_message";
   }
 
@@ -129,13 +190,21 @@ Options:
 - web_search (lookup information/news/facts online)
 - generate_quote (request quote/invoice)
 - server_status (check servers)
+- draft_message (draft or compose a message for someone)
+- send_message (send an outbound message)
+- schedule_message (schedule a message to send later)
+- contact_add (save a contact name and phone)
 - general (casual chat, greeting, question)
 
 Return ONLY the option name string (e.g. calendar_add).`;
 
     const aiRes = await queryOllama(prompt, 0.1, 25);
     const cleanCategory = aiRes.trim().toLowerCase().replace(/[^a-z_]/g, "");
-    const valid = ["calendar_add", "calendar_query", "task_add", "note_add", "memory_add", "web_search", "generate_quote", "server_status", "general"];
+    const valid = [
+      "calendar_add", "calendar_query", "task_add", "note_add", "memory_add",
+      "web_search", "generate_quote", "server_status", "draft_message",
+      "send_message", "schedule_message", "contact_add", "general"
+    ];
     if (valid.includes(cleanCategory)) {
       console.log(`🤖 AI Intent Classifier detected: "${cleanCategory}" for "${message}"`);
       return cleanCategory;

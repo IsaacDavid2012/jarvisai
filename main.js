@@ -10,6 +10,7 @@ const { searchWeb } = require("./search");
 const { checkServers } = require("./server_health");
 const { handleQuotationGen } = require("./quotations");
 const { parseIntent } = require("./intents");
+const messaging = require("./messaging");
 const {
   initMemory,
   learnMemory,
@@ -148,7 +149,40 @@ async function initializeBot() {
           return;
         }
 
+        // Detect interactive list selection / button click
+        const selectedOptionId = message.selectedRowId || message.listResponse?.singleSelectReply?.selectedRowId || message.selectedButtonId || (message.type === "list_response" ? body : null);
+
+        // Log inbound message & auto-resolve followups
+        await db.logMessage("inbound", senderJid, "Isaac", body || selectedOptionId || "");
+        await db.resolveFollowupsForRecipient(senderJid);
+
+        if (selectedOptionId && selectedOptionId.startsWith("menu_")) {
+          console.log(`📋 [MENU SELECTION - ${senderJid}] ${selectedOptionId}`);
+          setTypingState(client, senderJid, "typing");
+          const menuResp = await messaging.handleMenuSelection(senderJid, selectedOptionId, client);
+          setTypingState(client, senderJid, "stop");
+          if (menuResp) {
+            recordBotResponse(menuResp);
+            await client.sendMessage(senderJid, menuResp);
+          }
+          return;
+        }
+
         if (!body) return;
+
+        // Check if user is currently inside an active guided flow session
+        const activeSession = await db.getMenuSession(senderJid);
+        if (activeSession && activeSession.action) {
+          console.log(`🧭 [GUIDED FLOW (${activeSession.action} Step ${activeSession.step}) - ${senderJid}] ${body}`);
+          setTypingState(client, senderJid, "typing");
+          const guidedResponse = await messaging.handleGuidedFlowInput(senderJid, body, client, activeSession);
+          setTypingState(client, senderJid, "stop");
+          if (guidedResponse) {
+            recordBotResponse(guidedResponse);
+            await client.sendMessage(senderJid, guidedResponse);
+            return;
+          }
+        }
 
         // Silently extract preferences & habits to memory file in background
         autoExtractMemory(body);
@@ -160,9 +194,11 @@ async function initializeBot() {
         const response = await processMessage(body, senderJid, client);
 
         setTypingState(client, senderJid, "stop");
-        recordBotResponse(response); // Cache before sending to prevent self-trigger
-        await client.sendMessage(senderJid, response);
-        console.log(`📤 [TO ISAAC] ${response}`);
+        if (response) {
+          recordBotResponse(response); // Cache before sending to prevent self-trigger
+          await client.sendMessage(senderJid, response);
+          console.log(`📤 [TO ISAAC] ${response}`);
+        }
 
         if (!conversationHistory[senderJid]) {
           conversationHistory[senderJid] = [];
@@ -271,6 +307,10 @@ function startReminderScheduler(client) {
         await db.markEventReminderSent(event.id);
         console.log(`🔔 Sent Imminent reminder for Event #${event.id} to Isaac`);
       }
+
+      // 4. Dispatch due scheduled messages & auto-followups
+      await messaging.checkAndDispatchScheduledMessages(client);
+      await messaging.checkAndProcessFollowups(client);
     } catch (err) {
       console.error("Reminder Scheduler Error:", err.message);
     }
@@ -312,7 +352,37 @@ async function processMessage(userMsg, sender, clientInstance = null) {
     const intent = await parseIntent(userMsg);
     let response = "";
 
-    if (intent === "generate_quote") {
+    if (intent === "menu_selection") {
+      response = await messaging.handleMenuSelection(sender, userMsg, clientInstance || client);
+    } else if (intent === "show_menu") {
+      response = await messaging.showMenu(clientInstance || client, sender);
+    } else if (intent === "draft_and_send") {
+      response = await messaging.handleDraftAndSend(userMsg, clientInstance || client);
+    } else if (intent === "draft_message") {
+      response = await messaging.handleDraftMessage(userMsg);
+    } else if (intent === "refine_draft") {
+      response = await messaging.handleRefineDraft(userMsg);
+    } else if (intent === "send_message") {
+      response = await messaging.handleSendMessage(userMsg, clientInstance || client);
+    } else if (intent === "schedule_message") {
+      response = await messaging.handleScheduleMessage(userMsg, clientInstance || client);
+    } else if (intent === "set_followup_reminder") {
+      response = await messaging.handleSetFollowupReminder(userMsg);
+    } else if (intent === "contact_add") {
+      response = await messaging.handleContactAdd(userMsg);
+    } else if (intent === "contact_list") {
+      response = await messaging.handleContactList();
+    } else if (intent === "contact_delete") {
+      response = await messaging.handleContactDelete(userMsg);
+    } else if (intent === "template_save") {
+      response = await messaging.handleTemplateSave(userMsg);
+    } else if (intent === "template_list") {
+      response = await messaging.handleTemplateList();
+    } else if (intent === "template_use") {
+      response = await messaging.handleTemplateUse(userMsg);
+    } else if (intent === "message_history") {
+      response = await messaging.handleMessageHistory(userMsg);
+    } else if (intent === "generate_quote") {
       response = await handleQuotationGen(userMsg, clientInstance);
     } else if (intent === "server_status") {
       response = await handleServerStatus();
@@ -320,8 +390,6 @@ async function processMessage(userMsg, sender, clientInstance = null) {
       response = await handleMorningDigest();
     } else if (intent === "content_ideas") {
       response = await handleContentIdeas(userMsg);
-    } else if (intent === "send_message") {
-      response = await handleOutboundMessage(userMsg);
     } else if (intent === "web_search") {
       response = await handleWebSearch(userMsg);
     } else if (intent === "calendar_query") {
