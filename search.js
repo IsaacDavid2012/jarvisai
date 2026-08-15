@@ -1,169 +1,11 @@
 const axios = require("axios");
-const fs = require("fs");
-
-let puppeteerCore = null;
-try {
-  puppeteerCore = require("puppeteer-core");
-} catch (e) {
-  // Option fallback if puppeteer-core not directly top-level
-}
+const { queryOllama } = require("./ollama");
 
 /**
- * Fine-tuned Multi-provider Web Search Module
- * Priority: Puppeteer Headless DDG (Primary Organic) > DDG Instant Answer API > Wikipedia
+ * Cleans HTML entities and tags from API responses
+ * @param {string} text 
+ * @returns {string}
  */
-async function searchWeb(query, client = null) {
-  console.log(`🌐 Searching web for: "${query}"`);
-  const results = [];
-  const cleanQuery = query.trim();
-  if (!cleanQuery) return results;
-
-  // 1. PRIMARY: Puppeteer Headless Browser Search on DuckDuckGo HTML
-  try {
-    let browser = null;
-    let shouldCloseBrowser = false;
-
-    if (client && client.pupBrowser && client.pupBrowser.isConnected && typeof client.pupBrowser.newPage === "function") {
-      browser = client.pupBrowser;
-    } else if (puppeteerCore) {
-      const chromePath = process.env.PUPPETEER_EXECUTABLE_PATH || (
-        fs.existsSync("/usr/bin/chromium") ? "/usr/bin/chromium" : (
-          fs.existsSync("/usr/bin/chromium-browser") ? "/usr/bin/chromium-browser" : "/usr/bin/google-chrome-stable"
-        )
-      );
-
-      if (fs.existsSync(chromePath)) {
-        browser = await puppeteerCore.launch({
-          executablePath: chromePath,
-          headless: "new",
-          args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--disable-dev-shm-usage",
-            "--disable-accelerated-2d-canvas",
-            "--no-first-run",
-            "--no-zygote",
-            "--disable-gpu"
-          ]
-        });
-        shouldCloseBrowser = true;
-      }
-    }
-
-    if (browser) {
-      const page = await browser.newPage();
-      await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
-
-      await page.goto("https://html.duckduckgo.com/html/?q=" + encodeURIComponent(cleanQuery), {
-        waitUntil: "domcontentloaded",
-        timeout: 10000
-      });
-
-      const items = await page.evaluate(() => {
-        const parsed = [];
-        const blocks = document.querySelectorAll(".result");
-        blocks.forEach((block) => {
-          const titleEl = block.querySelector(".result__title");
-          const snippetEl = block.querySelector(".result__snippet");
-          const urlEl = block.querySelector(".result__url");
-          if (titleEl && snippetEl) {
-            let title = titleEl.innerText.trim();
-            let snippet = snippetEl.innerText.trim();
-            let rawUrl = urlEl ? (urlEl.getAttribute("href") || urlEl.innerText.trim()) : "";
-
-            // Exclude ads
-            if (!title.endsWith(" AD") && !rawUrl.includes("ad_domain")) {
-              parsed.push({ title, snippet, rawUrl });
-            }
-          }
-        });
-        return parsed;
-      });
-
-      await page.close();
-      if (shouldCloseBrowser && browser.close) {
-        await browser.close();
-      }
-
-      for (const item of items) {
-        let cleanUrl = item.rawUrl;
-        const match = item.rawUrl.match(/uddg=([^&]+)/);
-        if (match) {
-          cleanUrl = decodeURIComponent(match[1]);
-        }
-        const title = cleanText(item.title);
-        const snippet = cleanText(item.snippet);
-        if (title && snippet) {
-          results.push({ title, snippet, url: cleanUrl });
-        }
-        if (results.length >= 5) break;
-      }
-
-      if (results.length > 0) {
-        console.log(`🌐 Puppeteer web search returned ${results.length} organic results`);
-      }
-    }
-  } catch (e) {
-    console.warn("Puppeteer web search fallback notice:", e.message);
-  }
-
-  // 2. FALLBACK 1: DuckDuckGo Instant Answer API (For quick facts / entity summaries)
-  if (results.length === 0) {
-    try {
-      const ddgRes = await axios.get(`https://api.duckduckgo.com/?q=${encodeURIComponent(cleanQuery)}&format=json&no_html=1`, { timeout: 5000 });
-      if (ddgRes.data && ddgRes.data.AbstractText) {
-        results.push({
-          title: ddgRes.data.Heading || cleanQuery,
-          snippet: cleanText(ddgRes.data.AbstractText),
-          url: ddgRes.data.AbstractURL || ""
-        });
-      }
-      if (ddgRes.data && ddgRes.data.RelatedTopics && Array.isArray(ddgRes.data.RelatedTopics)) {
-        ddgRes.data.RelatedTopics.slice(0, 3).forEach(t => {
-          if (t.Text && typeof t.Text === "string") {
-            results.push({
-              title: "Related Result",
-              snippet: cleanText(t.Text),
-              url: t.FirstURL || ""
-            });
-          }
-        });
-      }
-    } catch (e) {
-      // Silently proceed
-    }
-  }
-
-  // 3. FALLBACK 2: Wikipedia API (For background facts, history, definitions)
-  if (results.length < 2) {
-    try {
-      const wikiRes = await axios.get(
-        `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(cleanQuery)}&format=json`,
-        {
-          headers: { "User-Agent": "JarvisAI/1.0 (isaac@creativeclicks.local)" },
-          timeout: 5000
-        }
-      );
-      if (wikiRes.data && wikiRes.data.query && wikiRes.data.query.search) {
-        wikiRes.data.query.search.slice(0, 4 - results.length).forEach(item => {
-          const cleanSnippet = cleanText(item.snippet);
-          if (cleanSnippet) {
-            results.push({
-              title: `Wikipedia: ${item.title}`,
-              snippet: cleanSnippet,
-              url: `https://en.wikipedia.org/wiki/${encodeURIComponent(item.title.replace(/\s+/g, "_"))}`
-            });
-          }
-        });
-      }
-    } catch (e) {
-      // Silently proceed
-    }
-  }
-
-  return results;
-}
-
 function cleanText(text) {
   if (!text) return "";
   return text
@@ -171,6 +13,7 @@ function cleanText(text) {
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
+    .replace(/&#0?39;/g, "'")
     .replace(/&#x27;/g, "'")
     .replace(/&quot;/g, '"')
     .replace(/&nbsp;/g, " ")
@@ -178,4 +21,163 @@ function cleanText(text) {
     .trim();
 }
 
-module.exports = { searchWeb };
+/**
+ * Searches DuckDuckGo Instant Answer API with Wikipedia fallback
+ * @param {string} query 
+ * @returns {Promise<{ results: Array<{title: string, snippet: string, url: string}>, error?: string }>}
+ */
+async function searchWeb(query) {
+  const cleanQuery = (query || "").trim();
+  if (!cleanQuery) {
+    return { results: [], error: "EMPTY_QUERY" };
+  }
+
+  console.log(`🌐 [WEB SEARCH] Query: "${cleanQuery}"`);
+  const results = [];
+  let ddgError = null;
+
+  // 1. DuckDuckGo Instant Answer API
+  try {
+    const ddgUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(cleanQuery)}&format=json&no_html=1&skip_disambig=1`;
+    const ddgRes = await axios.get(ddgUrl, {
+      timeout: 5000,
+      headers: { "User-Agent": "JARVIS-Assistant/1.0" }
+    });
+
+    if (ddgRes.data) {
+      // Primary Abstract
+      if (ddgRes.data.AbstractText && ddgRes.data.AbstractText.trim()) {
+        results.push({
+          title: ddgRes.data.Heading || cleanQuery,
+          snippet: cleanText(ddgRes.data.AbstractText),
+          url: ddgRes.data.AbstractURL || "https://duckduckgo.com/?q=" + encodeURIComponent(cleanQuery)
+        });
+      }
+
+      // Related Topics
+      if (Array.isArray(ddgRes.data.RelatedTopics)) {
+        for (const topic of ddgRes.data.RelatedTopics) {
+          if (results.length >= 5) break;
+
+          // Direct topic
+          if (topic.Text && topic.FirstURL) {
+            results.push({
+              title: topic.Text.split(" - ")[0] || "Related",
+              snippet: cleanText(topic.Text),
+              url: topic.FirstURL
+            });
+          }
+          // Sub-topics in Topics array
+          else if (Array.isArray(topic.Topics)) {
+            for (const sub of topic.Topics) {
+              if (results.length >= 5) break;
+              if (sub.Text && sub.FirstURL) {
+                results.push({
+                  title: sub.Text.split(" - ")[0] || "Related",
+                  snippet: cleanText(sub.Text),
+                  url: sub.FirstURL
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn(`⚠️ DDG Search API failed: ${err.message}`);
+    ddgError = err;
+  }
+
+  // 2. Wikipedia API Fallback (if DDG returned fewer than 3 results)
+  if (results.length < 3) {
+    try {
+      const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(cleanQuery)}&format=json&utf8=1`;
+      const wikiRes = await axios.get(wikiUrl, {
+        timeout: 5000,
+        headers: { "User-Agent": "JARVIS-Assistant/1.0 (isaac@personal.assistant)" }
+      });
+
+      if (wikiRes.data && wikiRes.data.query && Array.isArray(wikiRes.data.query.search)) {
+        for (const item of wikiRes.data.query.search) {
+          if (results.length >= 5) break;
+          const snippet = cleanText(item.snippet);
+          if (snippet) {
+            results.push({
+              title: item.title,
+              snippet: snippet,
+              url: `https://en.wikipedia.org/wiki/${encodeURIComponent(item.title.replace(/\s+/g, "_"))}`
+            });
+          }
+        }
+      }
+    } catch (wikiErr) {
+      console.warn(`⚠️ Wikipedia Search API failed: ${wikiErr.message}`);
+      if (results.length === 0 && (ddgError?.code === "ECONNABORTED" || wikiErr.code === "ECONNABORTED")) {
+        return { results: [], error: "TIMEOUT" };
+      }
+      if (results.length === 0) {
+        return { results: [], error: "UNAVAILABLE" };
+      }
+    }
+  }
+
+  return { results, error: null };
+}
+
+/**
+ * Generates an executive summary using Ollama (qwen2.5:3b) and formats output for WhatsApp
+ * @param {Array<{title: string, snippet: string, url: string}>} results 
+ * @param {string} query 
+ * @returns {Promise<string>} Formatted WhatsApp message string
+ */
+async function summarizeResults(results, query) {
+  if (!results || results.length === 0) {
+    return `🔍 *Results for '${query}':*\n\nNo results found for '${query}'. Try different keywords.`;
+  }
+
+  const contextData = results
+    .map((r, i) => `[Source ${i + 1}: ${r.title}]\n${r.snippet}`)
+    .join("\n\n");
+
+  let summary = "";
+  try {
+    const prompt = `You are JARVIS AI assistant. Summarize the key facts found for query: "${query}".
+
+Web Search Results:
+${contextData}
+
+Instructions:
+- Write a clear, factual, and concise summary (2-3 bullet points or a short paragraph).
+- Highlight key numbers, facts, definitions, or recent developments using WhatsApp bold (*word*).
+- No fluff, no robotic greetings.`;
+
+    summary = await queryOllama(prompt, 0.3, 200);
+    summary = summary
+      .replace(/^#{1,6}\s*/gm, "")
+      .replace(/\*\*(.+?)\*\*/g, "*$1*")
+      .replace(/^\s*[-*]\s+/gm, "• ")
+      .trim();
+  } catch (llmErr) {
+    console.warn("LLM summary generation failed, using snippets fallback:", llmErr.message);
+    summary = results.map(r => `• *${r.title}*: ${r.snippet}`).join("\n");
+  }
+
+  // Format sources list (deduplicated)
+  const seenUrls = new Set();
+  const validSources = [];
+  for (const r of results) {
+    if (r.url && !seenUrls.has(r.url)) {
+      seenUrls.add(r.url);
+      validSources.push(r);
+    }
+  }
+
+  let sourcesList = "";
+  if (validSources.length > 0) {
+    sourcesList = "\n\n🔗 *Sources:*\n" + validSources.map((r, idx) => `${idx + 1}. ${r.title} — ${r.url}`).join("\n");
+  }
+
+  return `🔍 *Results for '${query}':*\n\n${summary}${sourcesList}`;
+}
+
+module.exports = { searchWeb, summarizeResults, cleanText };

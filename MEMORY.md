@@ -1,7 +1,7 @@
 # 🧠 JARVIS LEARNED MEMORIES & PREFERENCES
 
-_Last updated: 2026-07-30T18:16:15.948Z_
+_Last updated: 2026-08-15T17:19:52.560Z_
 
-- [ID: #5] Client Mark prefers PDF invoices sent via WhatsApp
+- [ID: #6] Isaac prefers direct concise responses
 - [ID: #2] Default timezone: Asia/Kuala_Lumpur (MYT).
 - [ID: #1] Isaac prefers direct, concise responses with zero AI fluff.

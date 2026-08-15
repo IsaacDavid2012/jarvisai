@@ -24,9 +24,9 @@ function resolveNaturalCommand(msg) {
     return { command: 'docker ps --format "table {{.Names}}\\t{{.Status}}\\t{{.Ports}}"', title: "Docker Containers Check" };
   }
 
-  // CPU / System Load
-  if (/(cpu|system load|cpu load|cpu usage|how busy|server load|check cpu)/i.test(lower)) {
-    return { command: "uptime", title: "CPU & Load Check" };
+  // CPU / System Load / Uptime
+  if (/(cpu|system load|cpu load|cpu usage|how busy|server load|check cpu|uptime)/i.test(lower)) {
+    return { command: "uptime", title: "CPU & System Load" };
   }
 
   // Disk Partitions
@@ -43,7 +43,7 @@ function resolveNaturalCommand(msg) {
 }
 
 /**
- * Executes a shell command on the host system and returns formatted WhatsApp response with AI summary.
+ * Executes a shell command on the host system and returns formatted WhatsApp response.
  * @param {string} userMsg Full user input message
  * @returns {Promise<string>} Formatted response string for WhatsApp
  */
@@ -53,15 +53,15 @@ async function handleExecCommand(userMsg) {
   let isNaturalQuery = false;
   let queryTitle = "";
 
-  if (naturalMapping) {
+  if (naturalMapping && !userMsg.startsWith("!") && !userMsg.startsWith("/")) {
     command = naturalMapping.command;
     isNaturalQuery = true;
     queryTitle = naturalMapping.title;
   } else {
     // Strip trigger prefix if present
     command = userMsg
-      .replace(/^(!|\/)(exec|cmd|run|bash|sh)?\s*/i, "")
-      .replace(/^(run command|execute command|run shell|exec command|run terminal command|terminal command|system command|shell command|run bash|run|execute|exec|cmd)\s*:?\s*/i, "")
+      .replace(/^(!|\/)(exec|cmd|run|bash|sh)\s*/i, "")
+      .replace(/^(run command|execute command|run shell|exec command|system command|shell command|run bash)\s*:?\s*/i, "")
       .trim();
 
     if (!command && userMsg.trim()) {
@@ -70,23 +70,23 @@ async function handleExecCommand(userMsg) {
   }
 
   if (!command) {
-    return `❌ *COMMAND EXECUTION*\n───────────────\nPlease specify a command to execute or ask a system query.\n\n💡 *Examples:*\n• *"check how much storage I have"*\n• *"check RAM"* / *"check docker"*\n• \`!exec uptime\`\n• \`df -h\``;
+    return `❌ *REMOTE COMMAND EXECUTION*\n───────────────\nPlease specify a command to execute.\n\n💡 *Examples:*\n• \`!exec uptime\`\n• \`!cmd df -h\`\n• \`!exec free -m\`\n• \`!exec docker ps\``;
   }
 
   // Guard against interactive commands that hang indefinitely without flags
   const lowerCmd = command.toLowerCase().trim();
   if (lowerCmd === "top") {
     command = "top -b -n 1"; // Auto-convert top to batch mode
-  } else if (/^(htop|vim|vi|nano|less|more|man)$/.test(lowerCmd) || /^(htop|vim|vi|nano|less|more|man)\s/.test(lowerCmd)) {
-    return `⚠️ *INTERACTIVE COMMAND DETECTED*\n───────────────\nCommand \`${command.split(" ")[0]}\` requires an interactive terminal TUI and cannot be run directly via text response.\n\n💡 Try non-interactive flags or alternative commands (e.g. use \`top -b -n 1\` or \`cat <file>\`).`;
+  } else if (/^(htop|vim|vi|nano|less|more|man)($|\s)/i.test(lowerCmd)) {
+    const binary = lowerCmd.split(/\s+/)[0];
+    return `⚠️ *INTERACTIVE COMMAND BLOCKED*\n───────────────\nCommand \`${binary}\` requires an interactive TUI terminal and cannot be run via WhatsApp.\n\n💡 Try non-interactive flags or alternative commands (e.g. use \`top -b -n 1\` or \`cat <file>\`).`;
   }
 
-  // Handle sudo automatically if present
-  const displayCommand = command;
+  // Handle sudo automatically if password configured
   let execCommand = command;
-
-  const sudoPass = process.env.SUDO_PASSWORD || "IDC-201Two";
-  if (/\bsudo\s+/i.test(command)) {
+  const displayCommand = command;
+  const sudoPass = process.env.SUDO_PASSWORD || "";
+  if (/\bsudo\s+/i.test(command) && sudoPass) {
     execCommand = command.replace(/\bsudo\s+/gi, `echo ${sudoPass} | sudo -S `);
   }
 
@@ -127,31 +127,29 @@ async function handleExecCommand(userMsg) {
         combinedOutput = "(No output returned)";
       }
 
-      // Generate AI Summary using Ollama if exit code is 0 and output exists
+      // Generate AI Summary using Ollama if output is informative and exit code is 0
       let aiSummaryText = "";
-      if (exitCode === 0 && combinedOutput && combinedOutput !== "(No output returned)") {
+      if (exitCode === 0 && combinedOutput && combinedOutput !== "(No output returned)" && combinedOutput.length > 30) {
         try {
-          const summaryPrompt = `You are JARVIS, Isaac's executive AI assistant.
-User Request / Command: "${userMsg}" (Executed: "${command}")
+          const summaryPrompt = `User Command: "${command}"
 Command Output:
 ${combinedOutput.substring(0, 1500)}
 
-Summarize key findings directly and clearly for Isaac in 2-3 clean bullet points. Focus on key numbers, percentages, status, free storage, or container states. Use WhatsApp bold formatting (*word*). Zero AI fluff.`;
+Summarize the key facts concisely for the user in 1-2 bullet points. WhatsApp bold format (*word*). No pleasantries.`;
 
-          const summaryPromise = queryOllama(summaryPrompt, 0.3, 120);
-          const timeoutPromise = new Promise((res) => setTimeout(() => res(null), 5000));
+          const summaryPromise = queryOllama(summaryPrompt, 0.2, 100);
+          const timeoutPromise = new Promise((res) => setTimeout(() => res(null), 4000));
           const rawSummary = await Promise.race([summaryPromise, timeoutPromise]);
 
           if (rawSummary && typeof rawSummary === "string" && rawSummary.trim()) {
-            // Clean up formatting
             let cleanSummary = rawSummary.trim()
               .replace(/^#{1,6}\s*/gm, '')
               .replace(/\*\*(.+?)\*\*/g, '*$1*')
               .replace(/^\s*[-*]\s+/gm, '• ');
-            aiSummaryText = `\n\n🧠 *AI EXECUTIVE SUMMARY:*\n${cleanSummary}`;
+            aiSummaryText = `\n\n🧠 *AI Summary:*\n${cleanSummary}`;
           }
         } catch (aiErr) {
-          // If Ollama summary fails, fallback gracefully without failing output
+          // Graceful fallback if Ollama times out or errors
         }
       }
 
@@ -164,14 +162,14 @@ Summarize key findings directly and clearly for Isaac in 2-3 clean bullet points
         truncatedNotice = `\n\n⚠️ _Raw output truncated (${excess} characters omitted)._`;
       }
 
-      const headerTitle = isNaturalQuery ? `💻 *SYSTEM CHECK: ${queryTitle.toUpperCase()}*` : `💻 *COMMAND EXECUTION*`;
-      const queryLine = isNaturalQuery ? `📥 *Request:* "${userMsg}"\n⚙️ *Command Executed:* \`${displayCommand}\`\n` : `📥 *Command:* \`${displayCommand}\`\n`;
+      const headerTitle = isNaturalQuery ? `💻 *SYSTEM CHECK: ${queryTitle.toUpperCase()}*` : `💻 *REMOTE EXECUTION*`;
+      const queryLine = isNaturalQuery ? `📥 *Request:* "${userMsg}"\n⚙️ *Command:* \`${displayCommand}\`\n` : `📥 *Command:* \`${displayCommand}\`\n`;
 
-      const outputText = `${headerTitle}\n───────────────\n${queryLine}⏱️ *Duration:* \`${formattedDuration}\` | ${statusHeader}${aiSummaryText}\n\n📊 *Raw Output:*\n\`\`\`\n${combinedOutput}\n\`\`\`${truncatedNotice}`;
+      const outputText = `${headerTitle}\n───────────────\n${queryLine}⏱️ *Duration:* \`${formattedDuration}\` | ${statusHeader}${aiSummaryText}\n\n📊 *Output:*\n\`\`\`\n${combinedOutput}\n\`\`\`${truncatedNotice}`;
 
       resolve(outputText);
     });
   });
 }
 
-module.exports = { handleExecCommand };
+module.exports = { handleExecCommand, resolveNaturalCommand };

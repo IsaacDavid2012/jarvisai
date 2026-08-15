@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="JARVIS AI — 24/7 Autonomous WhatsApp Executive Assistant & Infrastructure Control Node for Creative Clicks Studios. Built with Node.js, Ollama, SQLite, and WhatsApp Web.js.">
-<title>JARVIS AI — Autonomous WhatsApp Executive Assistant & System Architecture</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%230a0d12' stroke='%2346f5a3' stroke-width='4'/><polygon points='50,22 78,74 22,74' fill='none' stroke='%235fb3f0' stroke-width='4'/><circle cx='50' cy='52' r='12' fill='%2346f5a3'/></svg>">
+<meta name="description" content="JARVIS AI — Autonomous WhatsApp Executive Assistant & Infrastructure Control Node. Built with Node.js, Ollama (qwen2.5:3b), SQLite, and WhatsApp Web.js.">
+<title>JARVIS AI — Autonomous WhatsApp Executive Assistant &amp; Architecture</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23090c10' stroke='%2346f5a3' stroke-width='4'/><polygon points='50,22 78,74 22,74' fill='none' stroke='%235fb3f0' stroke-width='4'/><circle cx='50' cy='52' r='12' fill='%2346f5a3'/></svg>">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 
@@ -131,13 +131,13 @@
   .sec-title{ font-family:var(--mono); font-size:26px; font-weight:700; color:var(--text); }
   .sec-sub{ font-size:15px; color:var(--text-dim); margin-top:6px; max-width:680px; }
 
-  /* Architecture Diagram & Flow */
+  /* Architecture Flow */
   .arch-box{
     background:var(--bg-panel); border:1px solid var(--line); border-radius:12px;
     padding:28px; position:relative; overflow:hidden;
   }
   .flow-grid{
-    display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-top:20px;
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-top:20px;
   }
   .flow-card{
     background:var(--bg-panel-raised); border:1px solid var(--line); border-radius:8px; padding:18px;
@@ -183,7 +183,7 @@
   .terminal-dots{ display:flex; gap:6px; }
   .terminal-dot{ width:10px; height:10px; border-radius:50%; background:#2c3546; }
   .terminal-title{ font-family:var(--mono); font-size:11.5px; color:var(--text-dim); }
-  .terminal-body{ padding:20px; font-family:var(--mono); font-size:13px; min-height:260px; max-height:400px; overflow-y:auto; }
+  .terminal-body{ padding:20px; font-family:var(--mono); font-size:13px; min-height:280px; max-height:450px; overflow-y:auto; }
   .term-msg{ margin-bottom:14px; line-height:1.5; }
   .term-user{ color:var(--blue); }
   .term-bot{ color:var(--text); background:var(--bg-panel); border:1px solid var(--line); padding:12px 14px; border-radius:6px; margin-top:4px; white-space:pre-wrap; }
@@ -209,7 +209,7 @@
   .term-chip:hover{ border-color:var(--blue); color:var(--blue); }
 
   /* Schema Tables */
-  .schema-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:18px; }
+  .schema-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:18px; }
   .schema-card{ background:var(--bg-panel); border:1px solid var(--line); border-radius:8px; padding:18px; }
   .schema-name{ font-family:var(--mono); font-size:14px; font-weight:700; color:var(--green); margin-bottom:8px; }
   .schema-table{ width:100%; border-collapse:collapse; font-family:var(--mono); font-size:11.5px; }
@@ -242,7 +242,7 @@
     <div class="status-metrics">
       <span>SERVER: <b>JARVIS PRIMARY</b></span>
       <span>TZ: <b>MYT (UTC+8)</b></span>
-      <span>MODEL: <b>neural-chat (Ollama)</b></span>
+      <span>MODEL: <b>qwen2.5:3b (Ollama)</b></span>
       <span>DB: <b>SQLite3</b></span>
     </div>
   </div>
@@ -252,21 +252,20 @@
 
   <!-- Hero Section -->
   <section class="hero">
-    <div class="eyebrow">Creative Clicks Studios • Executive AI Node</div>
-    <h1>Autonomous <span class="accent">WhatsApp</span> Assistant &amp; Infrastructure System</h1>
+    <div class="eyebrow">Creative Clicks Studios • Autonomous AI Node</div>
+    <h1>JARVIS <span class="accent">WhatsApp</span> Autonomous Assistant</h1>
     <p class="hero-sub">
-      Self-hosted, 24/7 autonomous executive assistant built specifically for <b>Isaac David Christopher</b>. Integrates local LLM intelligence with real-world infrastructure, multi-stage reminders, interactive WhatsApp List menus, remote shell execution, and intelligent message drafting &amp; scheduling.
+      Self-hosted, 24/7 personal executive AI assistant for <b>Isaac David Christopher</b>. Powered by local <b>qwen2.5:3b</b> via Ollama, SQLite database, 3-stage proactive reminder engines, remote shell execution, and lightweight live web search.
     </p>
 
     <div class="stack-pills">
       <span class="pill active">● Node.js v22+</span>
       <span class="pill active">● whatsapp-web.js</span>
-      <span class="pill active">● Ollama Local LLM</span>
-      <span class="pill active">● SQLite3</span>
-      <span class="pill active">● Puppeteer Chromium</span>
-      <span class="pill">● Google Calendar API</span>
+      <span class="pill active">● Ollama (qwen2.5:3b)</span>
+      <span class="pill active">● SQLite3 (personal.db)</span>
+      <span class="pill active">● DuckDuckGo + Wikipedia API</span>
       <span class="pill">● Systemd 24/7 Daemon</span>
-      <span class="pill">● Tailscale Multi-Node</span>
+      <span class="pill">● Asia/Kuala_Lumpur (UTC+8)</span>
     </div>
 
     <div class="stats-grid">
@@ -276,57 +275,57 @@
         <div class="stat-desc">Self-hosted systemd background service on Ubuntu</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Intent Classification</div>
-        <div class="stat-value" style="color:var(--blue)">Hybrid Dual-Tier</div>
-        <div class="stat-desc">Sub-millisecond regex + Ollama AI fallback</div>
+        <div class="stat-label">Inference Engine</div>
+        <div class="stat-value" style="color:var(--blue)">qwen2.5:3b</div>
+        <div class="stat-desc">High-speed local Ollama inference (~15.4 tok/s)</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Proactive Reminders</div>
-        <div class="stat-value" style="color:var(--amber)">3-Stage Engine</div>
-        <div class="stat-desc">Day-Of, 2-Hour Client SMS, &amp; Imminent start</div>
+        <div class="stat-value" style="color:var(--amber)">3-Stage Cron</div>
+        <div class="stat-desc">Day-of (07:00), 2-hour alert, and 15-minute start</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Timezone Sync</div>
-        <div class="stat-value">MYT (UTC+8)</div>
-        <div class="stat-desc">Asia/Kuala_Lumpur relative calendar resolver</div>
+        <div class="stat-label">Live Web Search</div>
+        <div class="stat-value" style="color:var(--green)">Lightweight</div>
+        <div class="stat-desc">DDG Instant API + Wikipedia + AI Summaries</div>
       </div>
     </div>
   </section>
 
-  <!-- How I Am Built / Architecture Section -->
+  <!-- Architecture Flow -->
   <section id="how-its-built">
     <div class="sec-header">
-      <div class="sec-num">01 // ARCHITECTURE &amp; UNDER THE HOOD</div>
-      <h2 class="sec-title">How JARVIS Is Built &amp; Operates</h2>
-      <p class="sec-sub">An event-driven, autonomous pipeline combining local offline AI, headless web scraping, persistent relational storage, and cron schedulers.</p>
+      <div class="sec-num">01 // ARCHITECTURE &amp; PIPELINE</div>
+      <h2 class="sec-title">How JARVIS Operates</h2>
+      <p class="sec-sub">Event-driven autonomous pipeline combining WhatsApp Web, sub-millisecond intent extraction, local LLM intelligence, and background cron intervals.</p>
     </div>
 
     <div class="arch-box">
       <div class="flow-grid">
         <div class="flow-card">
           <div class="flow-step">STEP 01</div>
-          <div class="flow-title">WhatsApp Web.js Client</div>
-          <div class="flow-body">Main listener in <code>main.js</code> with typing emulation, session auth, and security whitelist filters.</div>
+          <div class="flow-title">WhatsApp Listener</div>
+          <div class="flow-body">Listens via <code>main.js</code> with phone whitelist security (+60176001484) and anti-looping caches.</div>
         </div>
         <div class="flow-card">
           <div class="flow-step">STEP 02</div>
-          <div class="flow-title">Memory &amp; Intent Parser</div>
-          <div class="flow-body">Silently extracts learned habits (<code>memory.js</code>) and classifies intent into 12 core categories (<code>intents.js</code>).</div>
+          <div class="flow-title">Intent &amp; Date Parser</div>
+          <div class="flow-body">Fast regex + relative date resolver (<code>intents.js</code>) parsing "tomorrow", "Saturday 3pm", "in 30 mins".</div>
         </div>
         <div class="flow-card blue">
           <div class="flow-step">STEP 03</div>
-          <div class="flow-title">Local LLM &amp; Engines</div>
-          <div class="flow-body">Ollama <code>neural-chat</code> generates humanlike WhatsApp messages, search summaries, and quotes.</div>
+          <div class="flow-title">Execution Engines</div>
+          <div class="flow-body">Direct SQLite operations, safe shell execution (<code>cmd_runner.js</code>), or live web search (<code>search.js</code>).</div>
         </div>
         <div class="flow-card blue">
           <div class="flow-step">STEP 04</div>
-          <div class="flow-title">SQLite3 Storage</div>
-          <div class="flow-body">Persistent storage across 9 relational tables: events, tasks, notes, memories, contacts, templates, queue.</div>
+          <div class="flow-title">Local LLM Summaries</div>
+          <div class="flow-body">Ollama <code>qwen2.5:3b</code> synthesizes search results, executive command briefings, and natural chats.</div>
         </div>
         <div class="flow-card amber">
           <div class="flow-step">STEP 05</div>
           <div class="flow-title">60s Proactive Cron</div>
-          <div class="flow-body">Dispatches due scheduled messages, checks unanswered follow-ups, and triggers calendar alerts.</div>
+          <div class="flow-body">Monitors due reminders and triggers 3-stage calendar event notifications to WhatsApp automatically.</div>
         </div>
       </div>
     </div>
@@ -335,85 +334,83 @@
   <!-- Core Features Showcase -->
   <section id="features">
     <div class="sec-header">
-      <div class="sec-num">02 // CAPABILITIES &amp; SUITE</div>
-      <h2 class="sec-title">Core Systems &amp; Features</h2>
-      <p class="sec-sub">Built to empower Isaac's daily workflow across media production, IT studies, infrastructure management, and music.</p>
+      <div class="sec-num">02 // 5+1 CORE FEATURES</div>
+      <h2 class="sec-title">Core Autonomous Capabilities</h2>
+      <p class="sec-sub">Clean, zero-bloat feature suite designed for maximum speed and everyday utility.</p>
     </div>
 
     <div class="feature-grid">
 
-      <!-- 1. Interactive Menu -->
+      <!-- 1. Calendar Events -->
       <div class="feature-card">
         <div>
-          <span class="feature-badge">INTERACTIVE LIST MESSAGE</span>
-          <h3 class="feature-title">Clickable Menu &amp; Guided Flows</h3>
-          <p class="feature-desc">Texting "hi" or "menu" opens a native WhatsApp interactive list widget. Clicking an action initiates a step-by-step state machine with input validation and cancellation guards.</p>
+          <span class="feature-badge">CALENDAR &amp; 3-STAGE REMINDERS</span>
+          <h3 class="feature-title">Natural Language Calendar</h3>
+          <p class="feature-desc">Add events with relative dates ("photo shoot Saturday 3pm"). 60s cron automatically dispatches Day-of (07:00), 2-hour before, and 15-minute before reminders.</p>
         </div>
-        <div class="feature-code">User: "menu"
-JARVIS: [Sends interactive List widget]
-User: [Clicks "📝 Draft Message"]
-JARVIS: "Who should I send this to?"</div>
+        <div class="feature-code">• "photo shoot Saturday 3pm"
+• "what's today?" / "show my events"
+• "delete event 4"</div>
       </div>
 
-      <!-- 2. Messaging & Scheduling -->
+      <!-- 2. Notes -->
       <div class="feature-card">
         <div>
-          <span class="feature-badge">INTELLIGENT MESSAGING</span>
-          <h3 class="feature-title">AI Drafting &amp; Relative Scheduling</h3>
-          <p class="feature-desc">Supports 1-shot instant sending ("tell Mark I'm 10 mins late") and iterative draft review ("make it more casual"). Relative date engine schedules messages at exact MYT timestamps.</p>
+          <span class="feature-badge">NOTES &amp; KNOWLEDGE</span>
+          <h3 class="feature-title">Notes Catalog &amp; Retrieval</h3>
+          <p class="feature-desc">Instantly store notes, ideas, and documentation. Browse by catalog or fetch full note contents by ID or title.</p>
         </div>
-        <div class="feature-code">• "tell Mark I'll be 10 mins late"
-• "draft message for Sarah about rates"
-• "send this at 3pm tomorrow"</div>
+        <div class="feature-code">• "note: Mistral AI is..."
+• "notes" / "list notes"
+• "note 2" / "delete note 2"</div>
       </div>
 
-      <!-- 3. Auto-Followups -->
+      <!-- 3. Tasks -->
       <div class="feature-card">
         <div>
-          <span class="feature-badge">RESPONSE MONITOR</span>
-          <h3 class="feature-title">Auto-Followup Tracking</h3>
-          <p class="feature-desc">Monitors outbound messages. If a recipient remains silent after a specified threshold (e.g. 24 hours), JARVIS sends an auto-reminder and alerts Isaac with an escalation notification.</p>
+          <span class="feature-badge">TASKS &amp; TODOS</span>
+          <h3 class="feature-title">Task &amp; Todo Tracker</h3>
+          <p class="feature-desc">Capture quick action items on the fly. View active checklist and mark tasks complete with simple numeric IDs.</p>
         </div>
-        <div class="feature-code">• "remind me if Mark doesn't reply in 24h"
-• 24h later: Sends follow-up to client
-• Alerts Isaac: ⏰ Mark hasn't replied</div>
+        <div class="feature-code">• "task: buy drumsticks"
+• "tasks" / "show tasks"
+• "done task 2"</div>
       </div>
 
-      <!-- 4. Calendar & Reminders -->
+      <!-- 4. Reminders -->
       <div class="feature-card">
         <div>
-          <span class="feature-badge">CALENDAR &amp; REMINDERS</span>
-          <h3 class="feature-title">3-Stage Proactive Reminders</h3>
-          <p class="feature-desc">Parses natural relative dates without UTC day shifts. Fires 3 distinct notifications: Day-Of Morning, 2 Hours Before (with client SMS alert), and 15 Minutes Imminent Start.</p>
+          <span class="feature-badge">TIMED REMINDERS</span>
+          <h3 class="feature-title">One-off &amp; Recurring Timers</h3>
+          <p class="feature-desc">Schedule relative alerts or recurring routines. JARVIS proactively pings you when the timestamp arrives.</p>
         </div>
-        <div class="feature-code">• "Got a shoot with Sarah Saturday 3pm"
-• Stage 1: Day-Of Morning Digest
-• Stage 2: 2h Before (Alerts Client)
-• Stage 3: 15m Before Start</div>
+        <div class="feature-code">• "remind me to call Mark tomorrow 3pm"
+• "remind me in 30 minutes to check oven"
+• "reminders"</div>
       </div>
 
-      <!-- 5. Live Web Search -->
+      <!-- 5. Remote Shell -->
       <div class="feature-card">
         <div>
-          <span class="feature-badge">HEADLESS PUPPETEER</span>
-          <h3 class="feature-title">Live Chromium Web Search</h3>
-          <p class="feature-desc">Headless Chromium scrapes DuckDuckGo HTML directly, bypassing CAPTCHAs and bot blocks. Generates executive AI summaries with direct clickable source URLs.</p>
+          <span class="feature-badge">INFRASTRUCTURE EXECUTION</span>
+          <h3 class="feature-title">Remote Command Execution</h3>
+          <p class="feature-desc">Run server diagnostics safely from WhatsApp. Includes TUI interactive blockers, output truncation (&gt;3000 chars), and 30s timeout guards.</p>
         </div>
-        <div class="feature-code">• "What is the latest AI model in 2026?"
-• Scrapes live HTML via Chromium
-• Summarizes &amp; appends 🔗 Top Sources</div>
+        <div class="feature-code">• "!exec uptime"
+• "!cmd df -h"
+• "check RAM" / "check storage"</div>
       </div>
 
-      <!-- 6. Remote Shell & Server Health -->
+      <!-- 6. Web Search -->
       <div class="feature-card">
         <div>
-          <span class="feature-badge">REMOTE INFRASTRUCTURE</span>
-          <h3 class="feature-title">Remote Shell &amp; Health Checks</h3>
-          <p class="feature-desc">Execute shell commands directly from WhatsApp with interactive TUI guards (!exec uptime). Continuous ICMP/HTTP monitoring across Friday, Alpha, and JARVIS nodes.</p>
+          <span class="feature-badge">LIGHTWEIGHT LIVE SEARCH</span>
+          <h3 class="feature-title">DuckDuckGo + Wikipedia Search</h3>
+          <p class="feature-desc">Fast API web search with zero headless browser overhead. Ollama qwen2.5:3b generates structured executive summaries with source links.</p>
         </div>
-        <div class="feature-code">• "!exec df -h"
-• "!cmd docker ps"
-• "server status" (Friday, Alpha, JARVIS)</div>
+        <div class="feature-code">• "tell me about Mistral AI"
+• "what is quantum computing"
+• "look up latest AMD Ryzen"</div>
       </div>
 
     </div>
@@ -422,9 +419,9 @@ JARVIS: "Who should I send this to?"</div>
   <!-- Interactive Terminal Simulator -->
   <section id="simulator">
     <div class="sec-header">
-      <div class="sec-num">03 // LIVE DEMONSTRATION</div>
-      <h2 class="sec-title">JARVIS Command Terminal Simulator</h2>
-      <p class="sec-sub">Try out interactive commands below to preview how JARVIS parses and executes operations live on WhatsApp.</p>
+      <div class="sec-num">03 // LIVE SIMULATOR</div>
+      <h2 class="sec-title">JARVIS WhatsApp Simulator</h2>
+      <p class="sec-sub">Test natural language commands below to preview how JARVIS responds on WhatsApp.</p>
     </div>
 
     <div class="terminal">
@@ -440,123 +437,91 @@ JARVIS: "Who should I send this to?"</div>
 
       <div class="terminal-body" id="termOutput">
         <div class="term-msg">
-          <div class="term-user">Isaac: hi</div>
-          <div class="term-bot">🤖 *JARVIS EXECUTIVE CONTROL MENU*
-───────────────
-*Welcome, Isaac!* Here is your interactive command directory:
+          <div class="term-user">Isaac: tell me about Mistral AI</div>
+          <div class="term-bot">🔍 *Results for 'Mistral AI':*
 
-📝 *MESSAGE DRAFTING &amp; SENDING*
-• `draft message for [name] about [topic]`
-• `tell [name] that [message]` (1-shot instant send)
-• `send this at 3pm tomorrow` (scheduled delivery)
+Mistral AI is a French artificial intelligence company headquartered in Paris, founded in 2023 by former Meta and Google DeepMind researchers. They develop cutting-edge open-weights and commercial large language models (Mistral Large, Mistral NeMo, Codestral) and the Le Chat assistant.
 
-⏰ *AUTO-FOLLOWUP &amp; TRACKING*
-• `remind me if no reply in 24 hours`
-
-🗓️ *CALENDAR, TASKS &amp; NOTES*
-• `schedule [event] tomorrow at 3pm`
-• `add task [task description]`
-• `add note [title]: [content]`
-
-🖥️ *SYSTEM &amp; INFRASTRUCTURE*
-• `server status` | `morning digest` | `!exec uptime`
-───────────────
-💡 _Type any command above or ask naturally to execute._</div>
+🔗 *Sources:*
+1. Mistral AI — https://en.wikipedia.org/wiki/Mistral_AI
+2. Arthur Mensch — https://en.wikipedia.org/wiki/Arthur_Mensch</div>
         </div>
       </div>
 
       <div class="terminal-input-bar">
-        <input type="text" class="term-input" id="termInput" placeholder="Type a command (e.g. 'server status', 'draft message for Mark', 'schedule shoot Saturday 3pm')...">
+        <input type="text" class="term-input" id="termInput" placeholder="Type a command (e.g. 'tell me about quantum computing', 'task: buy drumsticks', '!exec uptime')...">
         <button class="term-btn" onclick="sendTerminalCommand()">Send</button>
       </div>
     </div>
 
     <div class="term-chips">
-      <span class="term-chip" onclick="simulateCmd('menu')">📱 menu</span>
-      <span class="term-chip" onclick="simulateCmd('tell Mark I will be 10 minutes late')">⚡ tell Mark I'll be 10m late</span>
-      <span class="term-chip" onclick="simulateCmd('draft message for Mark about photoshoot')">📝 draft message for Mark</span>
-      <span class="term-chip" onclick="simulateCmd('send at 3pm tomorrow')">📅 send at 3pm tomorrow</span>
-      <span class="term-chip" onclick="simulateCmd('Got a shoot with Sarah Saturday 3pm')">📆 schedule shoot Saturday 3pm</span>
-      <span class="term-chip" onclick="simulateCmd('server status')">🖥️ server status</span>
-      <span class="term-chip" onclick="simulateCmd('morning digest')">☀️ morning digest</span>
+      <span class="term-chip" onclick="simulateCmd('photo shoot Saturday 3pm')">📅 photo shoot Saturday 3pm</span>
+      <span class="term-chip" onclick="simulateCmd('task: buy drumsticks')">✅ task: buy drumsticks</span>
+      <span class="term-chip" onclick="simulateCmd('note: Mistral AI is an open model from France')">📝 note: Mistral AI...</span>
+      <span class="term-chip" onclick="simulateCmd('remind me in 30 minutes to check oven')">⏰ remind me in 30m</span>
+      <span class="term-chip" onclick="simulateCmd('!exec uptime')">⚡ !exec uptime</span>
+      <span class="term-chip" onclick="simulateCmd('tell me about quantum computing')">🔍 search quantum computing</span>
+      <span class="term-chip" onclick="simulateCmd('what is today?')">🗓️ what's today?</span>
     </div>
   </section>
 
   <!-- Database Blueprint Section -->
   <section id="database">
     <div class="sec-header">
-      <div class="sec-num">04 // DATABASE BLUEPRINT</div>
-      <h2 class="sec-title">SQLite Database Schema (`personal.db`)</h2>
-      <p class="sec-sub">Relational schema storing persistent calendar events, tasks, notes, memories, contacts, templates, and message queues.</p>
+      <div class="sec-num">04 // DATABASE SCHEMA</div>
+      <h2 class="sec-title">SQLite3 Blueprint (`personal.db`)</h2>
+      <p class="sec-sub">Clean schema optimized for speed and relational consistency.</p>
     </div>
 
     <div class="schema-grid">
 
       <div class="schema-card">
-        <div class="schema-name">contacts</div>
-        <table class="schema-table">
-          <tr><th>COLUMN</th><th>TYPE</th><th>DESCRIPTION</th></tr>
-          <tr><td class="col-name">id</td><td>INTEGER PK</td><td>Auto increment ID</td></tr>
-          <tr><td class="col-name">name</td><td>TEXT UNIQUE</td><td>Contact display name</td></tr>
-          <tr><td class="col-name">phone</td><td>TEXT</td><td>International phone number</td></tr>
-        </table>
-      </div>
-
-      <div class="schema-card">
-        <div class="schema-name">scheduled_messages</div>
-        <table class="schema-table">
-          <tr><th>COLUMN</th><th>TYPE</th><th>DESCRIPTION</th></tr>
-          <tr><td class="col-name">id</td><td>INTEGER PK</td><td>Schedule record ID</td></tr>
-          <tr><td class="col-name">recipient</td><td>TEXT</td><td>Target contact or phone</td></tr>
-          <tr><td class="col-name">message_text</td><td>TEXT</td><td>Message body content</td></tr>
-          <tr><td class="col-name">scheduled_at</td><td>DATETIME</td><td>Target MYT send timestamp</td></tr>
-          <tr><td class="col-name">status</td><td>TEXT</td><td>pending / sent / failed</td></tr>
-        </table>
-      </div>
-
-      <div class="schema-card">
-        <div class="schema-name">message_followups</div>
-        <table class="schema-table">
-          <tr><th>COLUMN</th><th>TYPE</th><th>DESCRIPTION</th></tr>
-          <tr><td class="col-name">id</td><td>INTEGER PK</td><td>Followup tracking ID</td></tr>
-          <tr><td class="col-name">recipient</td><td>TEXT</td><td>Contact name / JID</td></tr>
-          <tr><td class="col-name">followup_triggered_at</td><td>DATETIME</td><td>Expiry escalation time</td></tr>
-          <tr><td class="col-name">threshold_hours</td><td>INTEGER</td><td>Hours threshold (default 24)</td></tr>
-          <tr><td class="col-name">status</td><td>TEXT</td><td>pending / replied / escalated</td></tr>
-        </table>
-      </div>
-
-      <div class="schema-card">
         <div class="schema-name">events</div>
         <table class="schema-table">
-          <tr><th>COLUMN</th><th>TYPE</th><th>DESCRIPTION</th></tr>
-          <tr><td class="col-name">id</td><td>INTEGER PK</td><td>Event ID</td></tr>
-          <tr><td class="col-name">title</td><td>TEXT</td><td>Event subject / name</td></tr>
-          <tr><td class="col-name">event_date</td><td>TEXT</td><td>YYYY-MM-DD (MYT)</td></tr>
-          <tr><td class="col-name">start_time</td><td>TEXT</td><td>HH:MM start time</td></tr>
-          <tr><td class="col-name">reminder_day_sent</td><td>INTEGER</td><td>Stage 1 reminder flag</td></tr>
-          <tr><td class="col-name">reminder_2h_sent</td><td>INTEGER</td><td>Stage 2 reminder flag</td></tr>
+          <tr><th>COLUMN</th><th>TYPE</th></tr>
+          <tr><td class="col-name">id</td><td>INTEGER PK</td></tr>
+          <tr><td class="col-name">title</td><td>TEXT</td></tr>
+          <tr><td class="col-name">event_date</td><td>TEXT</td></tr>
+          <tr><td class="col-name">start_time</td><td>TEXT</td></tr>
+          <tr><td class="col-name">end_time</td><td>TEXT</td></tr>
+          <tr><td class="col-name">reminder_day_sent</td><td>INTEGER</td></tr>
+          <tr><td class="col-name">reminder_2h_sent</td><td>INTEGER</td></tr>
+          <tr><td class="col-name">reminder_sent</td><td>INTEGER</td></tr>
         </table>
       </div>
 
       <div class="schema-card">
-        <div class="schema-name">menu_sessions</div>
+        <div class="schema-name">tasks</div>
         <table class="schema-table">
-          <tr><th>COLUMN</th><th>TYPE</th><th>DESCRIPTION</th></tr>
-          <tr><td class="col-name">user_id</td><td>TEXT PK</td><td>WhatsApp User JID</td></tr>
-          <tr><td class="col-name">action</td><td>TEXT</td><td>Active flow identifier</td></tr>
-          <tr><td class="col-name">step</td><td>INTEGER</td><td>Step index in flow</td></tr>
-          <tr><td class="col-name">data_json</td><td>TEXT</td><td>Serialized draft state</td></tr>
+          <tr><th>COLUMN</th><th>TYPE</th></tr>
+          <tr><td class="col-name">id</td><td>INTEGER PK</td></tr>
+          <tr><td class="col-name">text</td><td>TEXT</td></tr>
+          <tr><td class="col-name">completed</td><td>INTEGER</td></tr>
+          <tr><td class="col-name">created_at</td><td>DATETIME</td></tr>
         </table>
       </div>
 
       <div class="schema-card">
-        <div class="schema-name">message_templates</div>
+        <div class="schema-name">notes</div>
         <table class="schema-table">
-          <tr><th>COLUMN</th><th>TYPE</th><th>DESCRIPTION</th></tr>
-          <tr><td class="col-name">id</td><td>INTEGER PK</td><td>Template ID</td></tr>
-          <tr><td class="col-name">name</td><td>TEXT UNIQUE</td><td>Template identifier name</td></tr>
-          <tr><td class="col-name">template_text</td><td>TEXT</td><td>Text with [Name] placeholders</td></tr>
+          <tr><th>COLUMN</th><th>TYPE</th></tr>
+          <tr><td class="col-name">id</td><td>INTEGER PK</td></tr>
+          <tr><td class="col-name">title</td><td>TEXT</td></tr>
+          <tr><td class="col-name">content</td><td>TEXT</td></tr>
+          <tr><td class="col-name">created_at</td><td>DATETIME</td></tr>
+          <tr><td class="col-name">updated_at</td><td>DATETIME</td></tr>
+        </table>
+      </div>
+
+      <div class="schema-card">
+        <div class="schema-name">reminders</div>
+        <table class="schema-table">
+          <tr><th>COLUMN</th><th>TYPE</th></tr>
+          <tr><td class="col-name">id</td><td>INTEGER PK</td></tr>
+          <tr><td class="col-name">text</td><td>TEXT</td></tr>
+          <tr><td class="col-name">remind_at</td><td>TEXT</td></tr>
+          <tr><td class="col-name">recurring</td><td>TEXT</td></tr>
+          <tr><td class="col-name">completed</td><td>INTEGER</td></tr>
         </table>
       </div>
 
@@ -568,8 +533,8 @@ JARVIS: "Who should I send this to?"</div>
 <!-- Footer -->
 <footer>
   <div class="wrap">
-    <p>🤖 JARVIS AI — Self-Hosted Executive Assistant &bull; Built for <b style="color:var(--text)">Isaac David Christopher</b> (Creative Clicks Studios)</p>
-    <p style="margin-top:8px">Powered by Node.js &bull; Ollama &bull; WhatsApp Web.js &bull; SQLite3 &bull; Systemd</p>
+    <p>🤖 JARVIS AI &bull; Built for <b style="color:var(--text)">Isaac David Christopher</b> (Creative Clicks Studios)</p>
+    <p style="margin-top:8px">Powered by Node.js &bull; Ollama (qwen2.5:3b) &bull; WhatsApp Web.js &bull; SQLite3</p>
   </div>
 </footer>
 
@@ -589,81 +554,60 @@ JARVIS: "Who should I send this to?"</div>
 
     let response = "";
 
-    if (lower === "hi" || lower === "hello" || lower === "menu") {
-      response = `🤖 *JARVIS EXECUTIVE CONTROL MENU*
+    if (lower.startsWith("photo shoot") || lower.includes("saturday 3pm") || lower.startsWith("schedule")) {
+      response = `📅 *EVENT SCHEDULED*
 ───────────────
-*Welcome, Isaac!* Here is your interactive command directory:
+📌 *Photo shoot*
+🗓️ Date: \`2026-08-22\`
+🕒 Time: \`15:00\`
+🆔 Event ID: \`#31\`
 
-📝 *MESSAGE DRAFTING & SENDING*
-• \`draft message for [name] about [topic]\`
-• \`tell [name] that [message]\` (1-shot instant send)
-• \`send this at 3pm tomorrow\` (scheduled delivery)
+🔔 _3-stage reminders active (day-of, 2h before, 15m before)._`;
+    } else if (lower.startsWith("task:") || lower.startsWith("add task")) {
+      const taskText = val.replace(/^(task\s*:|add task)\s*/i, "");
+      response = `✅ *TASK CREATED*
+───────────────
+📌 *${taskText}*
+🆔 Task ID: \`#7\``;
+    } else if (lower.startsWith("note:") || lower.startsWith("add note")) {
+      const noteContent = val.replace(/^(note\s*:|add note)\s*/i, "");
+      response = `📝 *NOTE SAVED*
+───────────────
+📄 *Content:*
+${noteContent}
 
-⏰ *AUTO-FOLLOWUP & TRACKING*
-• \`remind me if no reply in 24 hours\`
+🆔 Note ID: \`#9\``;
+    } else if (lower.startsWith("remind me")) {
+      response = `⏰ *REMINDER SET*
+───────────────
+🔔 *check oven*
+🗓️ Remind At: \`2026-08-16 02:15:00\`
+🆔 ID: \`#3\``;
+    } else if (lower.startsWith("!exec") || lower.startsWith("!cmd")) {
+      response = `💻 *REMOTE EXECUTION*
+───────────────
+📥 *Command:* \`uptime\`
+⏱️ *Duration:* \`42ms\` | 🟢 *Exit Code:* \`0\`
 
-🗓️ *CALENDAR, TASKS & NOTES*
-• \`schedule [event] tomorrow at 3pm\`
-• \`add task [task description]\`
-• \`add note [title]: [content]\`
+📊 *Output:*
+\`\`\`
+ 01:45:00 up 21:55,  1 user,  load average: 0.18, 0.22, 0.25
+\`\`\``;
+    } else if (lower.includes("quantum") || lower.startsWith("search") || lower.startsWith("tell me about") || lower.startsWith("what is")) {
+      response = `🔍 *Results for '${val}':*
 
-🖥️ *SYSTEM & INFRASTRUCTURE*
-• \`server status\` | \`morning digest\` | \`!exec uptime\`
-───────────────
-💡 _Type any command above or ask naturally to execute._`;
-    } else if (lower.startsWith("tell mark") || lower.startsWith("draft and send to mark")) {
-      response = `📤 *MESSAGE SENT TO MARK* (\`+60176001484\`)
-───────────────
-💬 "Hey Mark, running about 10 mins late, see you shortly!"`;
-    } else if (lower.startsWith("draft message for mark")) {
-      response = `📝 *MESSAGE DRAFT CREATED*
-───────────────
-👤 *Recipient:* Mark (\`+60176001484\`)
-💬 *Draft Content:*
-"Hey Mark, following up on our photo shoot availability for next week. Let me know what dates work best for you!"
-───────────────
-💡 *Actions:*
-• Say *"send"* or *"send to Mark"* to send now.
-• Say *"change to more casual"* to refine.
-• Say *"send at 3pm tomorrow"* to schedule.`;
-    } else if (lower.includes("send at 3pm tomorrow") || lower.includes("schedule message")) {
-      response = `✅ *MESSAGE SCHEDULED*
-───────────────
-👤 *Recipient:* Mark
-⏰ *Send Time:* \`3pm tomorrow\` (3pm MYT, Aug 15)
-💬 *Content:* "Hey Mark, following up on our shoot availability!"
-🆔 *Schedule ID:* \`#6\``;
-    } else if (lower.includes("shoot") || lower.includes("schedule") || lower.includes("saturday")) {
-      response = `📆 *EVENT SCHEDULED*
-───────────────
-📌 *Event:* Shoot with Sarah
-📆 *Date:* \`2026-08-15\`
-⏰ *Time:* \`15:00\`
-🆔 *Event ID:* \`#25\`
-🔔 _3-Stage proactive reminders activated (Day-Of, 2h Client SMS, Imminent)._`;
-    } else if (lower === "server status" || lower.includes("servers")) {
-      response = `🖥️ *INFRASTRUCTURE HEALTH CHECK*
-───────────────
-• *Friday (Production):* 🟢 ONLINE (0ms)
-• *Alpha (Office):* 🟢 ONLINE (0ms)
-• *JARVIS (Primary AI):* 🟢 ONLINE (0ms)
+Quantum computing utilizes the principles of quantum mechanics—namely superposition and entanglement—to perform complex calculations exponentially faster than classical computers for specific problem classes like cryptography, molecular simulation, and optimization.
 
-💡 _Tailscale & local servers monitored._`;
-    } else if (lower === "morning digest" || lower.includes("digest")) {
-      response = `☀️ *GOOD MORNING, ISAAC!* (\`2026-08-14\`)
+🔗 *Sources:*
+1. Quantum Computing — https://en.wikipedia.org/wiki/Quantum_computing
+2. Superposition Principle — https://en.wikipedia.org/wiki/Quantum_superposition`;
+    } else if (lower.includes("today") || lower === "calendar" || lower === "events") {
+      response = `📅 *TODAY'S SCHEDULE (2026-08-16)*
 ───────────────
-📅 *TODAY'S SCHEDULE:*
-• *Shoot with Sarah* at \`15:00\`
-
-📋 *TOP PENDING TASKS:*
-• Buy new drumsticks
-• Export legal podcast audio
-
-🖥️ *SERVERS:* Friday: ONLINE | Alpha: ONLINE | JARVIS: ONLINE
-───────────────
-Have a productive day!`;
+1. *Audio Master Review* at \`14:00\` [ID: #29]
+2. *Drum Rehearsal Session* at \`19:30\` [ID: #30]`;
     } else {
-      response = `🤖 *JARVIS:* Processed command "${val}" successfully. System state updated.`;
+      response = `🤖 *JARVIS:* Processed your request "${val}".`;
     }
 
     const msgDiv = document.createElement('div');

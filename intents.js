@@ -1,219 +1,309 @@
 const { queryOllama } = require("./ollama");
+const { getKLDate, getKLDateStr, getKLTimeStr } = require("./db");
 
+/**
+ * Extracts a clean web search query by stripping common prefixes
+ * @param {string} msg 
+ * @returns {string}
+ */
+function extractSearchQuery(msg) {
+  return msg
+    .replace(/^(!|\/)(search|google|find|web)\s*/i, "")
+    .replace(/^(can you |please )?(search web for|search for|search online for|search online|search web|search the web for|search the web|search|look up online|look up for|look up|google|find online|find out about|find out|tell me about|tell me who is|tell me what is|what is|who is|find)\s*:?\s*/i, "")
+    .replace(/\s*\?+$/, "")
+    .trim();
+}
+
+/**
+ * Parses natural language relative and absolute date/time in Asia/Kuala_Lumpur (UTC+8)
+ */
+function parseDateTimeString(text) {
+  if (!text) return null;
+  const input = text.toLowerCase().trim();
+  const now = getKLDate();
+
+  let targetDate = new Date(now);
+  let parsedTime = null; // "HH:MM"
+  let isRecurring = null;
+
+  // Check recurring
+  if (/\b(every day|daily)\b/i.test(input)) {
+    isRecurring = "daily";
+  } else if (/\b(every week|weekly)\b/i.test(input)) {
+    isRecurring = "weekly";
+  }
+
+  // 1. Check relative offsets like "in 15 minutes", "in 2 hours", "in 3 days"
+  const inMinutesMatch = input.match(/in\s+(\d+)\s*(?:mins?|minutes?)/i);
+  if (inMinutesMatch) {
+    const mins = parseInt(inMinutesMatch[1], 10);
+    const future = new Date(now.getTime() + mins * 60000);
+    const dateStr = getKLDateStr(future);
+    const timeStr = getKLTimeStr(future);
+    return { dateStr, timeStr, dateTimeStr: `${dateStr} ${timeStr}:00`, isRecurring };
+  }
+
+  const inHoursMatch = input.match(/in\s+(\d+)\s*(?:hrs?|hours?)/i);
+  if (inHoursMatch) {
+    const hrs = parseInt(inHoursMatch[1], 10);
+    const future = new Date(now.getTime() + hrs * 3600000);
+    const dateStr = getKLDateStr(future);
+    const timeStr = getKLTimeStr(future);
+    return { dateStr, timeStr, dateTimeStr: `${dateStr} ${timeStr}:00`, isRecurring };
+  }
+
+  const inDaysMatch = input.match(/in\s+(\d+)\s*days?/i);
+  if (inDaysMatch) {
+    const days = parseInt(inDaysMatch[1], 10);
+    targetDate.setDate(targetDate.getDate() + days);
+  } else if (/\bday after tomorrow\b/i.test(input)) {
+    targetDate.setDate(targetDate.getDate() + 2);
+  } else if (/\btomorrow\b/i.test(input)) {
+    targetDate.setDate(targetDate.getDate() + 1);
+  } else if (/\btoday\b/i.test(input) || /\btonight\b/i.test(input)) {
+    // Keep targetDate as today
+  } else {
+    // Check Day of Week (e.g., "Saturday", "next Tuesday", "this Friday")
+    const daysOfWeek = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+    const dayMatch = input.match(/\b(next\s+|this\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/i);
+    if (dayMatch) {
+      const isNext = (dayMatch[1] || "").trim() === "next";
+      const targetDayIndex = daysOfWeek.indexOf(dayMatch[2].toLowerCase());
+      const currentDayIndex = now.getDay();
+      let diff = targetDayIndex - currentDayIndex;
+
+      if (diff <= 0) {
+        diff += 7;
+      }
+      if (isNext && diff < 7) {
+        diff += 7;
+      }
+      targetDate.setDate(targetDate.getDate() + diff);
+    } else {
+      // Check explicit date e.g. "aug 25", "25 august", "2026-08-25"
+      const isoDateMatch = input.match(/\b(\d{4})-(\d{1,2})-(\d{1,2})\b/);
+      if (isoDateMatch) {
+        targetDate = new Date(parseInt(isoDateMatch[1], 10), parseInt(isoDateMatch[2], 10) - 1, parseInt(isoDateMatch[3], 10));
+      } else {
+        const monthNames = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+        const monthMatch = input.match(/\b(?:(\d{1,2})(?:st|nd|rd|th)?\s+([a-z]{3,9})|([a-z]{3,9})\s+(\d{1,2})(?:st|nd|rd|th)?)\b/i);
+        if (monthMatch) {
+          const dayPart = parseInt(monthMatch[1] || monthMatch[4], 10);
+          const monthStr = (monthMatch[2] || monthMatch[3]).toLowerCase().slice(0, 3);
+          const mIndex = monthNames.indexOf(monthStr);
+          if (mIndex !== -1 && dayPart >= 1 && dayPart <= 31) {
+            targetDate.setMonth(mIndex, dayPart);
+            if (targetDate.getTime() < now.getTime() - 24 * 3600000) {
+              targetDate.setFullYear(targetDate.getFullYear() + 1);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 2. Parse Time (e.g. "3pm", "3:30pm", "15:00", "9:00 am", "noon", "midnight")
+  const time12Match = input.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i);
+  if (time12Match) {
+    let hours = parseInt(time12Match[1], 10);
+    const minutes = parseInt(time12Match[2] || "0", 10);
+    const meridiem = time12Match[3].toLowerCase();
+
+    if (meridiem === "pm" && hours < 12) hours += 12;
+    if (meridiem === "am" && hours === 12) hours = 0;
+
+    parsedTime = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+  } else {
+    const time24Match = input.match(/\b(?:at\s+)?([01]?\d|2[0-3]):([0-5]\d)\b/i);
+    if (time24Match) {
+      parsedTime = `${String(time24Match[1]).padStart(2, "0")}:${String(time24Match[2]).padStart(2, "0")}`;
+    } else if (/\bnoon\b/i.test(input)) {
+      parsedTime = "12:00";
+    } else if (/\bmidnight\b/i.test(input)) {
+      parsedTime = "00:00";
+    } else if (/\btonight\b/i.test(input)) {
+      parsedTime = "20:00";
+    } else {
+      const simpleAtHourMatch = input.match(/\bat\s+(\d{1,2})\b/i);
+      if (simpleAtHourMatch) {
+        let h = parseInt(simpleAtHourMatch[1], 10);
+        if (h <= 12) {
+          if (h >= 1 && h <= 7) h += 12;
+        }
+        parsedTime = `${String(h).padStart(2, "0")}:00`;
+      }
+    }
+  }
+
+  const dateStr = getKLDateStr(targetDate);
+  const timeStr = parsedTime || "09:00";
+  const dateTimeStr = `${dateStr} ${timeStr}:00`;
+
+  return { dateStr, timeStr: parsedTime, dateTimeStr, isRecurring };
+}
+
+/**
+ * Extracts title/text and date/time info from a calendar event or reminder message
+ */
+function extractEntityAndDate(rawText, defaultPrefixRegex) {
+  let cleaned = rawText.replace(defaultPrefixRegex, "").trim();
+
+  const parsed = parseDateTimeString(cleaned);
+  let title = cleaned
+    .replace(/\b(today|tomorrow|day after tomorrow|tonight)\b/gi, "")
+    .replace(/\b(next\s+|this\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/gi, "")
+    .replace(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/gi, "")
+    .replace(/\b(?:at\s+)?([01]?\d|2[0-3]):([0-5]\d)\b/gi, "")
+    .replace(/\bat\s+\d{1,2}\b/gi, "")
+    .replace(/\bin\s+\d+\s*(?:mins?|minutes?|hrs?|hours?|days?)\b/gi, "")
+    .replace(/\b(every day|daily|every week|weekly)\b/gi, "")
+    .replace(/\b(?:on|at|for)\b/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  if (!title) {
+    title = cleaned;
+  }
+
+  return {
+    title,
+    dateStr: parsed ? parsed.dateStr : getKLDateStr(),
+    timeStr: parsed ? parsed.timeStr : null,
+    dateTimeStr: parsed ? parsed.dateTimeStr : `${getKLDateStr()} 09:00:00`,
+    isRecurring: parsed ? parsed.isRecurring : null
+  };
+}
+
+/**
+ * Fast Regex Intent Detector
+ */
 function parseIntentRegex(message) {
   const msg = message.toLowerCase().trim();
 
-  // --- 1-SHOT DRAFT & SEND (Top Priority) ---
-  if (/(draft and send|tell|text|message)\s+([a-z0-9_\+]+)\s+(that|telling|about|to)\b/i.test(msg) || /^draft and send to\b/i.test(msg)) {
-    return "draft_and_send";
+  // 1. Remote Command Execution
+  if (/^(!|\/)(exec|cmd|run|bash|sh)\b/i.test(msg) || /^(run command|execute command|run shell|exec command)\s*:/i.test(msg)) {
+    return "exec_command";
   }
 
-  // --- DRAFT MESSAGE (Review Mode) ---
-  if (/(draft|compose|create)\s+(a\s+)?(message|text|draft)\b/i.test(msg) || /(draft.*for|compose.*for|create.*draft)\b/i.test(msg)) {
-    return "draft_message";
-  }
-
-  // --- QUOTATION & INVOICE INTENTS ---
-  if (/(generate quote|create quote|quotation|generate invoice|create invoice|quote for|invoice for|send.*quotation|send.*quote|draft.*quote|quote\b|invoice\b|client name|pricing for|rate for)/.test(msg)) {
-    return "generate_quote";
-  }
-
-  // --- SERVER STATUS INTENT ---
-  if (/(server status|check server|check servers|server health|ping friday|ping alpha|ping jarvis|servers\b|how are (the |my )?servers|server status|infra status|is friday up|is alpha up)/.test(msg)) {
-    return "server_status";
-  }
-
-  // --- MORNING DIGEST INTENT ---
-  if (/(morning digest|daily briefing|morning report|digest\b|briefing\b|daily summary|morning update)/.test(msg)) {
-    return "morning_digest";
-  }
-
-  // --- CONTENT IDEAS INTENT ---
-  if (/(content ideas|tiktok ideas|drum ideas|video ideas|youtube ideas|ideas for|give me ideas|brainstorm content)/.test(msg)) {
-    return "content_ideas";
-  }
-
-  // --- NOTES INTENTS ---
-  if (/(view|show|open|read|display|select)\s+note\s+(#?\d+)/.test(msg) || /^\s*note\s+(#?\d+)\s*$/.test(msg)) {
-    return "note_view";
-  }
-  if (/(note down|save note|add note|create note|take a note|remember note|remember that|note\s*:|keep a note|write down|make a note|save this note)/.test(msg)) {
-    return "note_add";
-  }
-  if (/(show|list|view|my|all)\s+notes\b/.test(msg) || msg === "notes" || msg === "my notes") {
-    return "note_list";
-  }
-  if (/(search|find|lookup)\s+note\b/.test(msg)) {
-    return "note_search";
-  }
-  if (/(delete|remove)\s+note\b/.test(msg)) {
-    return "note_delete";
-  }
-
-  // --- MEMORY & LEARNING INTENTS ---
-  if (/(remember that|learn that|keep in mind|remember this|save preference|learn this|note that|remember\b:|prefers|likes to|dislikes|favorite|always use|never use)/.test(msg)) {
-    return "memory_add";
-  }
-  if (/(show|list|view|what do you|my)\s+(memories|memory|preferences|learned)\b/.test(msg) || msg === "memory" || msg === "memories") {
-    return "memory_list";
-  }
-  if (/(forget|delete|remove)\s+memory\b/.test(msg)) {
-    return "memory_delete";
-  }
-
-  // --- CALENDAR & REMINDER INTENTS ---
-  if (/(what|when|show|list|view|upcoming|my|today|this week|how's my|how is my)\s*.*(calendar|event|meeting|appointment|schedule|reminder|week|day)/.test(msg) || 
-      /what's (my )?(schedule|calendar|week|today|upcoming)/.test(msg) ||
-      /how's my week looking/.test(msg) ||
-      msg === "calendar" || msg === "schedule" || msg === "events" || msg === "my schedule" || msg === "what's on") {
-    return "calendar_query";
-  }
-
-  if (/(delete|remove|cancel)\s+(event|meeting|reminder|appointment)/.test(msg)) {
-    return "calendar_delete";
-  }
-
-  const eventWords = "(shoot|session|meeting|practice|service|class|call|flight|dinner|lunch|hangout|badminton|gym|appointment|gig|recording|edit|rehearsal|event|reminder)";
-  const timeIndicators = "(at \\d|on \\d|tomorrow|today|this \\w+|next \\w+|in \\d+|from now|\\d+pm|\\d+am|\\d+:\\d+)";
-
-  if (/(schedule|book|add event|create event|set an event|set event|add meeting|create meeting|remind me|new reminder|set reminder|set a reminder|reminder for|add reminder|add to calendar|put in calendar|add to schedule|new event|put on my calendar|put on my schedule)/.test(msg)) {
-    return "calendar_add";
-  }
-
-  if (new RegExp(`\\b${eventWords}\\b.*${timeIndicators}`, "i").test(msg) || new RegExp(`${timeIndicators}.*\\b${eventWords}\\b`, "i").test(msg)) {
-    return "calendar_add";
-  }
-
-  if (/(got a|have a|going to|heading to|heading out for)\s+.*(at|on|tomorrow|today|this|next|\d+pm|\d+am)/.test(msg)) {
-    return "calendar_add";
-  }
-
-  // --- TASKS INTENTS ---
-  if (/(add task|create task|add todo|create todo|new task|todo\s*:|add to my todo|add to my tasks|put on my task list|need to|have to|must|don't forget to|dont forget to|remember to)/.test(msg)) {
+  // 2. Tasks
+  if (/^(task|todo)\s*:\s*.+/i.test(msg) || /^(add task|create task|add todo|create todo|new task)\b/i.test(msg)) {
     return "task_add";
   }
-  if (/(show|list|view|my|all|pending)\s+(tasks|todos)/.test(msg) || msg === "tasks" || msg === "todos" || msg === "my tasks" || msg === "to do" || msg === "todo" || msg === "task list") {
+  if (/^(show|list|view|my|all|pending)\s+(tasks|todos)\b/i.test(msg) || msg === "tasks" || msg === "todos" || msg === "my tasks" || msg === "todo") {
     return "task_list";
   }
-  if (/(done|complete|finish|mark|completed)\s+task/.test(msg) || /task\s+\d+\s+(done|complete|finished)/.test(msg)) {
+  if (/^(complete|done|finish|mark done)\s+task\s+#?(\d+)/i.test(msg) || /^task\s+#?(\d+)\s+(done|complete|completed|finished)/i.test(msg)) {
     return "task_complete";
   }
-  if (/(delete|remove)\s+task/.test(msg)) {
+  if (/^(delete|remove|cancel)\s+task\s+#?(\d+)/i.test(msg)) {
     return "task_delete";
   }
 
-  // --- WEB SEARCH & RESEARCH INTENTS ---
-  if (/(search web|web search|google|browse|search online|find online|look up online|search for|look up|what is|who is|how to|latest news|research|find out|tell me about|investigate|compare|vs|benefits of|pros and cons)/.test(msg)) {
+  // 3. Notes
+  if (/^(view|show|open|read|display)\s+note\s+(#?\d+|.+)/i.test(msg) || /^note\s+#?(\d+)$/i.test(msg)) {
+    return "note_view";
+  }
+  if (/^note\s*:\s*.+/i.test(msg) || /^(add note|save note|create note|new note|take a note)\b/i.test(msg)) {
+    return "note_add";
+  }
+  if (/^(show|list|view|all|my)\s+notes\b/i.test(msg) || msg === "notes" || msg === "my notes" || msg === "notes catalog") {
+    return "note_list";
+  }
+  if (/^(delete|remove)\s+note\s+(#?\d+|.+)/i.test(msg)) {
+    return "note_delete";
+  }
+
+  // 4. Reminders
+  if (/^remind me\s+to\b/i.test(msg) || /^remind me\s+in\b/i.test(msg) || /^reminder\s*:\s*.+/i.test(msg) || /^set reminder\b/i.test(msg) || /^new reminder\b/i.test(msg)) {
+    return "remind_add";
+  }
+  if (/^(show|list|view|check|my|all|pending)\s+reminders\b/i.test(msg) || msg === "reminders" || msg === "my reminders" || msg === "pending reminders") {
+    return "remind_list";
+  }
+  if (/^(delete|remove|complete|done|cancel)\s+reminder\s+#?(\d+)/i.test(msg)) {
+    return "remind_delete";
+  }
+
+  // 5. Calendar Events
+  if (/^(what's today|whats today|what is today|show my events|my events|what's on|show calendar|my calendar|what do i have|events today|today's schedule|todays schedule)/i.test(msg) ||
+      msg === "calendar" || msg === "events" || msg === "schedule" || msg === "today") {
+    return "calendar_query";
+  }
+  if (/^(delete|remove|cancel)\s+event\s+#?(\d+)/i.test(msg)) {
+    return "calendar_delete";
+  }
+
+  const eventKeywords = "(shoot|photo shoot|video shoot|session|meeting|practice|service|appointment|call|lunch|dinner|rehearsal|flight|badminton|gym|event)";
+  const timeIndicators = "(at \\d|on \\d|tomorrow|today|tonight|this \\w+|next \\w+|in \\d+|\\d+pm|\\d+am|\\d+:\\d+|saturday|sunday|monday|tuesday|wednesday|thursday|friday)";
+
+  if (/^(schedule|add event|create event|new event|event\s*:)\b/i.test(msg)) {
+    return "calendar_add";
+  }
+  if (new RegExp(`\\b${eventKeywords}\\b.*${timeIndicators}`, "i").test(msg) || new RegExp(`${timeIndicators}.*\\b${eventKeywords}\\b`, "i").test(msg)) {
+    return "calendar_add";
+  }
+
+  // 6. Web Search Intent
+  if (/^(!|\/)(search|google|web)\b/i.test(msg) ||
+      /^(search for|search web for|search web|search online for|search online|search the web for|search the web|search|look up online|look up for|look up|google|find online|find out about|tell me about|what is|who is|find)\b/i.test(msg)) {
     return "web_search";
   }
 
-  // --- MENU & HELP INTENT ---
-  if (/^\s*(hi|hello|hey|yo|menu|help|commands|options|start|info|jarvis)\s*$/i.test(msg) || /^\s*(show menu|view menu|command list|help menu|features)\b/i.test(msg)) {
-    return "show_menu";
-  }
-
-  // --- MENU SELECTION INTENT (Interactive list click or row ID) ---
-  if (/^menu_(draft_msg|schedule_msg|use_template|add_contact|add_event|add_task|add_note|search_web|server_status|morning_digest)$/i.test(msg)) {
-    return "menu_selection";
-  }
-
-  // --- MESSAGING & CONTACT INTENTS ---
-  if (/(add contact|save contact|create contact)\b/.test(msg)) {
-    return "contact_add";
-  }
-  if (/(show contacts|list contacts|my contacts|view contacts)\b/.test(msg) || msg === "contacts") {
-    return "contact_list";
-  }
-  if (/(delete contact|remove contact)\b/.test(msg)) {
-    return "contact_delete";
-  }
-
-  if (/(save template|create template|add template)\b/.test(msg)) {
-    return "template_save";
-  }
-  if (/(show templates|list templates|my templates|view templates)\b/.test(msg) || msg === "templates") {
-    return "template_list";
-  }
-  if (/^use template\b/.test(msg)) {
-    return "template_use";
-  }
-
-  if (/(message history|chat history|message log|chat log)\b/.test(msg) || /^history\b/.test(msg)) {
-    return "message_history";
-  }
-
-  if (/(remind me if|followup if|follow-up if|escalate if|ping me if.*doesn't reply|remind.*if.*no reply)\b/.test(msg)) {
-    return "set_followup_reminder";
-  }
-
-  if (/(schedule message|send at|send this at|send on|send tomorrow|send next|send in \d+)\b/.test(msg)) {
-    return "schedule_message";
-  }
-
-  if (/(draft and send|tell|text|message)\s+([A-Za-z0-9_\+]+)\s+(that|telling|about|to)\b/.test(msg) || /^draft and send to\b/.test(msg)) {
-    return "draft_and_send";
-  }
-
-  if (/(draft|compose|create)\s+(a\s+)?(message|text|draft)\b/.test(msg) || /(draft.*for|compose.*for|create.*draft)\b/.test(msg)) {
-    return "draft_message";
-  }
-
-  if (/(change to|make it|make this|rewrite|refine|add detail|more casual|more formal|more concise|shorter|longer)\b/.test(msg)) {
-    return "refine_draft";
-  }
-
-  if (/(send message|send msg|send whatsapp|send text|send it|send now)\b/.test(msg) || /^\s*send\s*$/.test(msg) || /^send to\b/.test(msg)) {
-    return "send_message";
+  // 7. Natural command queries (storage, RAM, docker, uptime)
+  if (/(storage|disk space|how much space|free ram|ram usage|memory usage|running containers|docker ps|server uptime|system load)/i.test(msg)) {
+    return "exec_command";
   }
 
   return "general";
 }
 
+/**
+ * High accuracy Intent Classifier combining regex + Ollama LLM fallback
+ */
 async function parseIntent(message) {
   const regexIntent = parseIntentRegex(message);
   if (regexIntent !== "general") {
     return regexIntent;
   }
 
-  // If regex returns "general" and message has > 2 words, ask AI classifier to determine intent
+  // If regex returns "general", check with Ollama for nuanced expressions
   const words = message.trim().split(/\s+/);
   if (words.length < 2) return "general";
 
   try {
-    const prompt = `Categorize intent of user message: "${message}"
-Options:
-- calendar_add (schedule meeting/shoot/event/reminder with date or time)
-- calendar_query (ask about schedule/calendar/events)
-- task_add (something user needs to do/buy/finish)
-- note_add (save information/idea/note)
-- memory_add (user preference/fact to remember)
-- web_search (lookup information/news/facts online)
-- generate_quote (request quote/invoice)
-- server_status (check servers)
-- draft_message (draft or compose a message for someone)
-- send_message (send an outbound message)
-- schedule_message (schedule a message to send later)
-- contact_add (save a contact name and phone)
-- general (casual chat, greeting, question)
+    const prompt = `Classify the user's intent into EXACTLY ONE category:
+User: "${message}"
 
-Return ONLY the option name string (e.g. calendar_add).`;
+Categories:
+- web_search: Looking up facts, searching online, or asking what/who something is
+- calendar_add: Scheduling an event/meeting/shoot with date or time
+- calendar_query: Checking schedule, events, or asking what is happening today/this week
+- task_add: Adding a to-do item or task
+- note_add: Saving a note, idea, or information
+- remind_add: Setting a timed reminder (e.g. remind me to call someone)
+- exec_command: System check or running a server command
+- general: General conversation, greeting, opinion, or casual chat
 
-    const aiRes = await queryOllama(prompt, 0.1, 25);
+Respond ONLY with the category name string (e.g. web_search).`;
+
+    const aiRes = await queryOllama(prompt, 0.1, 20);
     const cleanCategory = aiRes.trim().toLowerCase().replace(/[^a-z_]/g, "");
-    const valid = [
-      "calendar_add", "calendar_query", "task_add", "note_add", "memory_add",
-      "web_search", "generate_quote", "server_status", "draft_message",
-      "send_message", "schedule_message", "contact_add", "general"
-    ];
+    const valid = ["web_search", "calendar_add", "calendar_query", "task_add", "note_add", "remind_add", "exec_command", "general"];
+
     if (valid.includes(cleanCategory)) {
-      console.log(`🤖 AI Intent Classifier detected: "${cleanCategory}" for "${message}"`);
       return cleanCategory;
     }
-  } catch (e) {
-    // Fallback gracefully on LLM timeout or error
+  } catch (err) {
+    // Fallback gracefully
   }
 
   return "general";
 }
 
-module.exports = { parseIntent };
+module.exports = {
+  parseIntent,
+  parseIntentRegex,
+  parseDateTimeString,
+  extractEntityAndDate,
+  extractSearchQuery
+};

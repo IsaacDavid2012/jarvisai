@@ -801,6 +801,10 @@ async function checkAndDispatchScheduledMessages(clientInstance) {
     }
   } catch (err) {
     console.error("Scheduled message dispatch error:", err.message);
+    if (err.message && (err.message.includes("detached Frame") || err.message.includes("Target closed") || err.message.includes("Session closed") || err.message.includes("Protocol error"))) {
+      console.error("❌ Fatal browser error in scheduled dispatch. Triggering restart...");
+      process.exit(1);
+    }
   }
 }
 
@@ -840,6 +844,10 @@ async function checkAndProcessFollowups(clientInstance) {
           console.log(`🔔 [AUTO-REMINDER SENT] Sent followup to ${recipientKey}`);
         } catch (sendErr) {
           console.error(`Failed to send auto-reminder to ${recipientKey}:`, sendErr.message);
+          if (sendErr.message && (sendErr.message.includes("detached Frame") || sendErr.message.includes("Target closed") || sendErr.message.includes("Session closed"))) {
+            console.error("❌ Fatal browser error during auto-reminder. Triggering restart...");
+            process.exit(1);
+          }
         }
       }
 
@@ -855,6 +863,10 @@ async function checkAndProcessFollowups(clientInstance) {
     }
   } catch (err) {
     console.error("Followup processing error:", err.message);
+    if (err.message && (err.message.includes("detached Frame") || err.message.includes("Target closed") || err.message.includes("Session closed") || err.message.includes("Protocol error"))) {
+      console.error("❌ Fatal browser error in followup processing. Triggering restart...");
+      process.exit(1);
+    }
   }
 }
 
