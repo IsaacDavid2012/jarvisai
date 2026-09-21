@@ -34,7 +34,7 @@ function parseDateTimeString(text) {
   }
 
   // 1. Check relative offsets like "in 15 minutes", "in 2 hours", "in 3 days"
-  const inMinutesMatch = input.match(/in\s+(\d+)\s*(?:mins?|minutes?)/i);
+  const inMinutesMatch = input.match(/(?:\bin\s+|^)(\d+)\s*(?:mins?|minutes?)\b/i);
   if (inMinutesMatch) {
     const mins = parseInt(inMinutesMatch[1], 10);
     const future = new Date(now.getTime() + mins * 60000);
@@ -43,7 +43,7 @@ function parseDateTimeString(text) {
     return { dateStr, timeStr, dateTimeStr: `${dateStr} ${timeStr}:00`, isRecurring };
   }
 
-  const inHoursMatch = input.match(/in\s+(\d+)\s*(?:hrs?|hours?)/i);
+  const inHoursMatch = input.match(/(?:\bin\s+|^)(\d+)\s*(?:hrs?|hours?)\b/i);
   if (inHoursMatch) {
     const hrs = parseInt(inHoursMatch[1], 10);
     const future = new Date(now.getTime() + hrs * 3600000);
@@ -52,7 +52,7 @@ function parseDateTimeString(text) {
     return { dateStr, timeStr, dateTimeStr: `${dateStr} ${timeStr}:00`, isRecurring };
   }
 
-  const inDaysMatch = input.match(/in\s+(\d+)\s*days?/i);
+  const inDaysMatch = input.match(/(?:\bin\s+|^)(\d+)\s*days?\b/i);
   if (inDaysMatch) {
     const days = parseInt(inDaysMatch[1], 10);
     targetDate.setDate(targetDate.getDate() + days);
@@ -146,18 +146,19 @@ function parseDateTimeString(text) {
  * Extracts title/text and date/time info from a calendar event or reminder message
  */
 function extractEntityAndDate(rawText, defaultPrefixRegex) {
+  const parsed = parseDateTimeString(rawText);
   let cleaned = rawText.replace(defaultPrefixRegex, "").trim();
 
-  const parsed = parseDateTimeString(cleaned);
   let title = cleaned
     .replace(/\b(today|tomorrow|day after tomorrow|tonight)\b/gi, "")
     .replace(/\b(next\s+|this\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/gi, "")
     .replace(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/gi, "")
     .replace(/\b(?:at\s+)?([01]?\d|2[0-3]):([0-5]\d)\b/gi, "")
     .replace(/\bat\s+\d{1,2}\b/gi, "")
-    .replace(/\bin\s+\d+\s*(?:mins?|minutes?|hrs?|hours?|days?)\b/gi, "")
+    .replace(/(?:\bin\s+|^)\d+\s*(?:mins?|minutes?|hrs?|hours?|days?)\b(?:\s+to)?/gi, "")
     .replace(/\b(every day|daily|every week|weekly)\b/gi, "")
     .replace(/\b(?:on|at|for)\b/gi, "")
+    .replace(/^\s*to\s+/i, "")
     .replace(/\s{2,}/g, " ")
     .trim();
 
@@ -179,6 +180,45 @@ function extractEntityAndDate(rawText, defaultPrefixRegex) {
  */
 function parseIntentRegex(message) {
   const msg = message.toLowerCase().trim();
+
+  // 0. Safety Killswitch
+  if (/^(killswitch|emergency stop|shut off jarvis|shutdown jarvis|stop jarvis)$/i.test(msg)) {
+    return "killswitch";
+  }
+
+  // 0.5 Activity & Audit Trail
+  if (/^(what did you do today|activity log|audit log|actions today|today's actions|todays actions|what have you done today)/i.test(msg)) {
+    return "activity_log";
+  }
+
+  // 0.6 Reminder Quick Actions (Done / Snooze)
+  if (/^(done|complete|snooze(\s+\d+m?)?)$/i.test(msg)) {
+    return "reminder_action";
+  }
+
+  // 0.7 Tomorrow Schedule Quick Query
+  if (/^(what's on tomorrow|whats on tomorrow|what is on tomorrow|what do i have tomorrow|tomorrow schedule|tomorrow's schedule|tomorrows schedule|events tomorrow|tomorrow)$/i.test(msg)) {
+    return "tomorrow_query";
+  }
+
+  // 0.8 Calendar Reschedule / Move Event
+  if (/^(move|reschedule|postpone|shift|change date of)\s+(event\s+)?(#?\d+|[a-zA-Z0-9\s]+)\s+to\s+/i.test(msg)) {
+    return "calendar_reschedule";
+  }
+
+  // 0.9 Server Container Specific Queries & Error Logs
+  if (/^(is\s+([a-zA-Z0-9_-]+)\s+(running|up|alive|down|active|healthy|ok)\??|status\s+of\s+([a-zA-Z0-9_-]+)\??)/i.test(msg)) {
+    return "server_service_query";
+  }
+  if (/^((show|view|get)\s+)?([a-zA-Z0-9_-]+)\s+(error\s+)?logs\b/i.test(msg) || /^logs\s+(of\s+)?([a-zA-Z0-9_-]+)/i.test(msg)) {
+    return "server_service_logs";
+  }
+  if (/^restart\s+([a-zA-Z0-9_-]+)\b/i.test(msg)) {
+    return "server_service_restart";
+  }
+  if (/^(stop|delete|kill|prune)\s+([a-zA-Z0-9_-]+)\b/i.test(msg)) {
+    return "server_service_action";
+  }
 
   // 1. Remote Command Execution
   if (/^(!|\/)(exec|cmd|run|bash|sh)\b/i.test(msg) || /^(run command|execute command|run shell|exec command)\s*:/i.test(msg)) {
@@ -249,9 +289,25 @@ function parseIntentRegex(message) {
     return "web_search";
   }
 
-  // 7. Natural command queries (storage, RAM, docker, uptime)
-  if (/(storage|disk space|how much space|free ram|ram usage|memory usage|running containers|docker ps|server uptime|system load)/i.test(msg)) {
+  // 7. Natural command queries (storage, RAM, docker, uptime, system resources)
+  if (/(storage|disk space|how much space|free ram|ram usage|memory usage|running containers|docker ps|server uptime|system load|system health|system status|check resources|resource monitor|server load|hardware status)/i.test(msg)) {
     return "exec_command";
+  }
+
+  // 8. Morning Walkthrough / Briefing
+  if (/(morning walkthrough|daily walkthrough|walkthrough|morning briefing|daily briefing|morning digest|briefing|today's briefing|todays briefing|morning update)/i.test(msg)) {
+    return "morning_walkthrough";
+  }
+
+  // 9. Learned Memories
+  if (/^remember\s*(that|to|about)?\s*.+/i.test(msg) || /^learn\s*(that)?\s*.+/i.test(msg)) {
+    return "memory_add";
+  }
+  if (/^(show|list|view|my|all)\s+memories\b/i.test(msg) || msg === "memories" || msg === "my memory" || msg === "what do you remember") {
+    return "memory_list";
+  }
+  if (/^(forget|delete|remove)\s+memory\s+#?(\d+)/i.test(msg)) {
+    return "memory_delete";
   }
 
   return "general";
@@ -282,13 +338,15 @@ Categories:
 - note_add: Saving a note, idea, or information
 - remind_add: Setting a timed reminder (e.g. remind me to call someone)
 - exec_command: System check or running a server command
+- morning_walkthrough: Requesting morning briefing, daily overview, or walkthrough
+- memory_add: Explicitly telling the assistant to remember or learn a preference or fact
 - general: General conversation, greeting, opinion, or casual chat
 
 Respond ONLY with the category name string (e.g. web_search).`;
 
     const aiRes = await queryOllama(prompt, 0.1, 20);
     const cleanCategory = aiRes.trim().toLowerCase().replace(/[^a-z_]/g, "");
-    const valid = ["web_search", "calendar_add", "calendar_query", "task_add", "note_add", "remind_add", "exec_command", "general"];
+    const valid = ["web_search", "calendar_add", "calendar_query", "task_add", "note_add", "remind_add", "exec_command", "morning_walkthrough", "memory_add", "general"];
 
     if (valid.includes(cleanCategory)) {
       return cleanCategory;

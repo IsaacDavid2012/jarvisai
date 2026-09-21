@@ -6,3 +6,16 @@ _IGNORE_isaac_ai_session/
 *.db
 *.log
 screenshot_*.png
+backups/
+voice/bin/
+voice/models/
+voice/tmp/
+*.wav
+*.mp3
+*.opus
+*.zip
+*.onnx
+*.onnx.json
+__pycache__/
+*.pyc
+calendar.ics

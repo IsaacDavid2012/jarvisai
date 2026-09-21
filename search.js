@@ -132,7 +132,18 @@ async function searchWeb(query) {
  */
 async function summarizeResults(results, query) {
   if (!results || results.length === 0) {
-    return `🔍 *Results for '${query}':*\n\nNo results found for '${query}'. Try different keywords.`;
+    try {
+      const fallbackPrompt = `User question: "${query}"\nProvide a direct, factual, and concise answer in 2-3 bullet points. Highlight key terms and numbers using WhatsApp bold (*word*). No fluff or pleasantries.`;
+      let aiSummary = await queryOllama(fallbackPrompt, 0.3, 200);
+      aiSummary = aiSummary
+        .replace(/^#{1,6}\s*/gm, "")
+        .replace(/\*\*(.+?)\*\*/g, "*$1*")
+        .replace(/^\s*[-*]\s+/gm, "• ")
+        .trim();
+      return `🔍 *Answer for '${query}':*\n\n${aiSummary}`;
+    } catch (e) {
+      return `🔍 *Results for '${query}':*\n\nNo results found for '${query}'. Try different keywords.`;
+    }
   }
 
   const contextData = results
